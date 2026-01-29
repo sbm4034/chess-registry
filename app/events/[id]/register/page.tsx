@@ -76,65 +76,92 @@ export default function EventRegisterPage() {
     setAlreadyRegistered(true);
   };
 
-  if (loading) return <p>Loading...</p>;
-  if (!event) return <p>Event not found</p>;
-
+if (loading) {
   return (
-    <div style={{ padding: 40 }}>
-      <h1>Register for Event</h1>
+    <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <p className="text-gray-400">Loading registration...</p>
+    </div>
+  );
+}
 
-      <h2>{event.name}</h2>
-      <p>{event.location}</p>
-      <p>
-        {event.start_date} → {event.end_date}
-      </p>
+if (!event) {
+  return (
+    <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <p className="text-gray-400">Event not found</p>
+    </div>
+  );
+}
 
-      <hr />
-
-      {alreadyRegistered ? (
-        <p>
-          ✅ You have already registered for this event.
-          <br />
-          Status: <strong>Pending confirmation</strong>
+return (
+  <div className="min-h-screen bg-black text-white px-4 py-8">
+    <div className="max-w-md mx-auto space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-semibold">
+          Event Registration
+        </h1>
+        <p className="text-sm text-gray-400 mt-1">
+          Complete your registration for the event
         </p>
+      </div>
+
+      {/* Event summary */}
+      <div className="bg-zinc-900 rounded-xl p-4 space-y-2 border border-zinc-800">
+        <h2 className="font-semibold">{event.name}</h2>
+
+        <p className="text-sm text-gray-400">
+          {event.location}
+        </p>
+
+        <p className="text-sm text-gray-400">
+          {event.start_date} → {event.end_date}
+        </p>
+      </div>
+
+      {/* Registration status / CTA */}
+      {alreadyRegistered ? (
+        <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800">
+          <p className="text-green-400 font-medium">
+            ✅ Registration Submitted
+          </p>
+          <p className="text-sm text-gray-400 mt-1">
+            Your registration is pending confirmation.
+          </p>
+        </div>
       ) : (
-        <button onClick={registerForEvent}>
+        <button
+          onClick={registerForEvent}
+          className="w-full bg-yellow-500 text-black py-3 rounded-xl font-semibold text-lg"
+        >
           Confirm Registration
         </button>
       )}
 
-      <hr />
+      {/* Payment instructions */}
+      <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800 space-y-3">
+        <h3 className="font-medium">Payment Instructions</h3>
 
-      <h3>Payment Instructions</h3>
+        <p className="text-sm text-gray-400">
+          Please pay the registration fee via PhonePe using the QR code below.
+        </p>
 
-      <p>
-        Please pay the registration fee via PhonePe using the QR code
-        below.
-      </p>
+        <p className="text-sm text-gray-400">
+          Mention your <strong>name</strong> and <strong>event name</strong>
+          while making the payment.
+        </p>
 
-      <p>
-        <strong>Important:</strong> Mention your name and event name
-        while making the payment.
-      </p>
-
-      <p>
-        Registration will be confirmed after payment verification.
-      </p>
-
-      {/* Placeholder for QR */}
-      <div
-        style={{
-          width: 200,
-          height: 200,
-          border: '1px solid #ccc',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginTop: 10
-        }}
-      >
-        PhonePe QR
+        {/* QR placeholder */}
+        <div className="w-40 h-40 border border-zinc-700 rounded-lg flex items-center justify-center text-gray-500 text-sm">
+          PhonePe QR
+        </div>
       </div>
+
+      {/* Reassurance */}
+      <p className="text-xs text-gray-500 text-center">
+        Registration will be confirmed after payment verification by organizers.
+      </p>
     </div>
-  );
+  </div>
+);
+
 }

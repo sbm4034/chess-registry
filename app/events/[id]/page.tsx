@@ -39,35 +39,80 @@ export default function EventDetailPage() {
     router.push(`/events/${id}/register`);
   };
 
-  if (loading) return <p>Loading event...</p>;
-  if (!event) return <p>Event not found</p>;
-
+if (loading) {
   return (
-    <div style={{ padding: 40 }}>
-      <h1>{event.name}</h1>
-
-      <p>
-        <strong>Location:</strong> {event.location}
-      </p>
-
-      <p>
-        <strong>Dates:</strong> {event.start_date} → {event.end_date}
-      </p>
-
-      {event.registration_link && (
-        <p>
-          External registration:{' '}
-          <a href={event.registration_link} target="_blank">
-            Google Form
-          </a>
-        </p>
-      )}
-
-      <hr />
-
-      <button onClick={handleRegisterClick}>
-        Register for this event
-      </button>
+    <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <p className="text-gray-400">Loading event...</p>
     </div>
   );
+}
+
+if (!event) {
+  return (
+    <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <p className="text-gray-400">Event not found</p>
+    </div>
+  );
+}
+
+return (
+  <div className="min-h-screen bg-black text-white px-4 py-8">
+    <div className="max-w-md mx-auto space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-semibold">
+          {event.name}
+        </h1>
+        <p className="text-sm text-gray-400 mt-1">
+          Official chess tournament
+        </p>
+      </div>
+
+      {/* Event Details Card */}
+      <div className="bg-zinc-900 rounded-xl p-4 space-y-3 border border-zinc-800">
+        <div>
+          <p className="text-sm text-gray-400">Location</p>
+          <p>{event.location}</p>
+        </div>
+
+        <div>
+          <p className="text-sm text-gray-400">Dates</p>
+          <p>
+            {event.start_date} → {event.end_date}
+          </p>
+        </div>
+      </div>
+
+      {/* External registration (optional) */}
+      {event.registration_link && (
+        <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800">
+          <p className="text-sm text-gray-400 mb-1">
+            External Registration
+          </p>
+          <a
+            href={event.registration_link}
+            target="_blank"
+            className="text-yellow-400 font-medium"
+          >
+            Open Google Form →
+          </a>
+        </div>
+      )}
+
+      {/* Register CTA */}
+      <button
+        onClick={handleRegisterClick}
+        className="w-full bg-yellow-500 text-black py-3 rounded-xl font-semibold text-lg"
+      >
+        Register for this Event
+      </button>
+
+      {/* Reassurance */}
+      <p className="text-xs text-gray-500 text-center">
+        Registration confirmation is subject to document and payment verification.
+      </p>
+    </div>
+  </div>
+);
+
 }
