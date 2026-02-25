@@ -1,40 +1,25 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 import Image from 'next/image';
 import Link from 'next/link';
-import { X, Calendar, MapPin, ShieldCheck } from 'lucide-react';
-import { Playfair_Display, Manrope } from 'next/font/google';
+import { X } from 'lucide-react';
 
-const display = Playfair_Display({
-  subsets: ['latin'],
-  weight: ['600', '700'],
-  preload: false,
-});
-
-const sans = Manrope({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  preload: false,
-});
 export default function HomePage() {
+  const supabase = createClient();
   const [images, setImages] = useState<any[]>([]);
   const [members, setMembers] = useState<
     { id: string; name: string; title: string; photo_url: string }[]
   >([]);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeModal, setActiveModal] = useState<
     | { type: 'gallery'; index: number }
     | { type: 'member'; index: number }
     | null
   >(null);
-  const [showDonate, setShowDonate] = useState(false);
   const [failedGalleryImages, setFailedGalleryImages] = useState<number[]>([]);
   const [failedMemberImages, setFailedMemberImages] = useState<number[]>([]);
-  const [loadingGalleryImages, setLoadingGalleryImages] = useState<boolean[]>(
-    [],
-  );
+  const [loadingGalleryImages, setLoadingGalleryImages] = useState<boolean[]>([]);
   const [loadingMemberImages, setLoadingMemberImages] = useState<boolean[]>([]);
   const [galleryRetry, setGalleryRetry] = useState<number[]>([]);
   const [memberRetry, setMemberRetry] = useState<number[]>([]);
@@ -42,12 +27,9 @@ export default function HomePage() {
   const sliderRef = useRef<HTMLDivElement | null>(null);
   const [activeMemberSlide, setActiveMemberSlide] = useState(0);
   const memberSliderRef = useRef<HTMLDivElement | null>(null);
+  const [showDonate, setShowDonate] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setIsLoggedIn(!!data.user);
-    });
-
     supabase
       .from('gallery')
       .select('image_url')
@@ -180,8 +162,7 @@ export default function HomePage() {
 
     if (activeModal.type === 'gallery' && images.length) {
       const nextIndex = (activeModal.index + 1) % images.length;
-      const prevIndex =
-        (activeModal.index - 1 + images.length) % images.length;
+      const prevIndex = (activeModal.index - 1 + images.length) % images.length;
       const preload = [nextIndex, prevIndex]
         .map((idx) => images[idx]?.image_url)
         .filter(Boolean) as string[];
@@ -193,8 +174,7 @@ export default function HomePage() {
 
     if (activeModal.type === 'member' && members.length) {
       const nextIndex = (activeModal.index + 1) % members.length;
-      const prevIndex =
-        (activeModal.index - 1 + members.length) % members.length;
+      const prevIndex = (activeModal.index - 1 + members.length) % members.length;
       const preload = [nextIndex, prevIndex]
         .map((idx) => memberUrls[idx])
         .filter(Boolean) as string[];
@@ -206,419 +186,261 @@ export default function HomePage() {
   }, [activeModal, images, members, memberUrls]);
 
   return (
-    <div
-      className={`${sans.className} relative w-full space-y-8`}
-    >
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-24 left-1/2 h-72 w-[120%] -translate-x-1/2 rounded-[40%] bg-gradient-to-b from-slate-100 via-slate-50 to-transparent" />
-        <div className="absolute right-8 top-20 h-32 w-32 rounded-full bg-slate-200/50 blur-2xl" />
-        <div className="absolute left-6 top-40 h-24 w-24 rounded-full bg-slate-100/60 blur-2xl" />
-      </div>
+    
 
-      {/* Recent events slideshow */}
-      <section className="space-y-4 rounded-3xl border border-slate-100 bg-white/85 p-4 shadow-sm md:p-6">
-        <div className="flex items-center justify-end">
-          <div className="hidden items-center gap-2 md:flex">
-            <button
-              type="button"
-              onClick={() => {
-                if (!images.length) return;
-                setActiveSlide(
-                  (prev) => (prev - 1 + images.length) % images.length,
-                );
-              }}
-              disabled={!images.length}
-              className="rounded-full border border-gray-200 bg-white px-2 py-1 text-xs font-semibold text-gray-600 shadow-sm hover:bg-gray-50"
-              aria-label="Previous slide"
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (!images.length) return;
-                setActiveSlide((prev) => (prev + 1) % images.length);
-              }}
-              disabled={!images.length}
-              className="rounded-full border border-gray-200 bg-white px-2 py-1 text-xs font-semibold text-gray-600 shadow-sm hover:bg-gray-50"
-              aria-label="Next slide"
-            >
-              ›
-            </button>
-          </div>
-        </div>
-        <div
-          ref={sliderRef}
-          className="flex overflow-x-auto pb-2 scroll-smooth"
-        >
-          {images.map((img, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => setActiveModal({ type: 'gallery', index: idx })}
-              className="group relative min-w-full max-w-full overflow-hidden border border-gray-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md md:min-w-full md:max-w-full"
-            >
-              {failedGalleryImages.includes(idx) ? (
-                <div className="flex h-64 items-center justify-center bg-slate-100 text-sm text-slate-500 md:h-80">
-                  Image unavailable
-                </div>
-              ) : (
-                <div className="relative h-64 w-full md:h-80">
-                  {loadingGalleryImages[idx] && (
-                    <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" />
-                  )}
-                  <Image
-                    key={`gallery-${idx}-${galleryRetry[idx] || 0}`}
-                    src={`${img.image_url}${
-                      galleryRetry[idx] ? `?retry=${galleryRetry[idx]}` : ''
-                    }`}
-                    alt="Chess event"
-                    fill
-                    sizes="(max-width: 768px) 100vw, 900px"
-                    quality={70}
-                    className={`object-cover transition-transform duration-300 group-hover:scale-105 ${
-                      loadingGalleryImages[idx] ? 'opacity-0' : 'opacity-100'
-                    }`}
-                    onError={() => {
-                      setLoadingGalleryImages((prev) => {
-                        const next = [...prev];
-                        next[idx] = false;
-                        return next;
-                      });
-                      const retryCount = galleryRetry[idx] || 0;
-                      if (retryCount < 1) {
-                        setTimeout(() => {
-                          setLoadingGalleryImages((prev) => {
-                            const next = [...prev];
-                            next[idx] = true;
-                            return next;
-                          });
-                          setGalleryRetry((prev) => {
-                            const next = [...prev];
-                            next[idx] = (next[idx] || 0) + 1;
-                            return next;
-                          });
-                        }, 800);
-                        return;
-                      }
-                      setFailedGalleryImages((prev) =>
-                        prev.includes(idx) ? prev : [...prev, idx],
-                      );
-                    }}
-                    onLoad={() =>
-                      setLoadingGalleryImages((prev) => {
-                        const next = [...prev];
-                        next[idx] = false;
-                        return next;
-                      })
-                    }
-                  />
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-              <div className="absolute bottom-5 left-5 right-5 text-left text-white">
-                <p className="text-2xl font-semibold">Panipat Chess Association</p>
-                <p className="text-xs text-white/80">Tap to view gallery</p>
-              </div>
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center justify-center gap-2 pt-2">
-          {images.map((_, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => setActiveSlide(idx)}
-              className={`h-2.5 w-2.5 rounded-full transition ${
-                idx === activeSlide
-                  ? 'bg-slate-800'
-                  : 'bg-slate-300 hover:bg-slate-400'
-              }`}
-              aria-label={`Go to slide ${idx + 1}`}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* Hero */}
-      <section className="space-y-5 md:space-y-6">
-        <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-gradient-to-br from-white via-white to-slate-50/40 p-6 shadow-sm backdrop-blur md:p-8">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 bg-no-repeat opacity-[0.05]"
-            style={{
-              backgroundImage: "url('/logo.png')",
-              backgroundPosition: '85% 18%',
-              backgroundSize: 'clamp(240px, 40vw, 520px) auto',
-            }}
+    <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen bg-background text-primary">
+      <section className="relative min-h-[75vh]">
+        <div className="absolute inset-0">
+          <Image
+            src="/chess_hero_banner.png"
+            alt="Chess hero banner"
+            fill
+            className="object-cover"
+            priority
           />
-          <div className="relative space-y-5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-800 shadow-sm">
-              Official Federation Portal
-            </div>
-            <h1
-              className={`${display.className} text-3xl leading-tight text-gray-900 md:text-5xl`}
-            >
-              Chess Registry
-            </h1>
-            <p className="text-gray-700 md:text-lg max-w-2xl">
-              Register players, verify documents, and participate in official chess
-              events with a streamlined, trusted workflow.
+          <div className="absolute inset-0 bg-gradient-to-b from-dark/80 via-dark/60 to-dark/70" />
+        </div>
+        <div className="relative max-w-6xl mx-auto px-6 py-24 text-center text-white">
+          <div className="space-y-6">
+            <p className="text-xs uppercase tracking-widest text-accent">
+              OFFICIAL CHESS REGISTRY
             </p>
-            <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-5xl md:text-6xl font-serif font-semibold tracking-tight text-primary-foreground">
+              Empowering Chess Across [District]
+            </h1>
+            <div className="w-24 h-[3px] bg-accent mx-auto mt-6" />
+            <p className="text-lg font-sans text-white/80 max-w-2xl mx-auto">
+              Official Registration & Tournament Platform
+            </p>
+            <div className="flex flex-wrap justify-center gap-6">
               <Link
-                href={isLoggedIn ? '/profile' : '/events'}
-                className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/20 transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30"
+                href="/events"
+                className="bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300 shadow-md hover:shadow-lg rounded-full px-8 py-3 font-semibold"
               >
-                {isLoggedIn ? 'Go to Dashboard' : 'Register for an Event'}
-                <span aria-hidden="true">→</span>
+                Explore Events
               </Link>
               <Link
                 href="/players"
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/20"
+                className="border border-accent text-accent hover:bg-accent hover:text-accent-foreground rounded-full px-8 py-3 font-semibold transition-all duration-300"
               >
-                Search players
+                Find a Player
               </Link>
             </div>
-            <div className="flex flex-wrap gap-3 text-xs text-slate-600">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 shadow-sm">
-                <Calendar className="h-4 w-4 text-slate-700" />
-                Events and registrations
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 shadow-sm">
-                <MapPin className="h-4 w-4 text-slate-700" />
-                Local and district tournaments
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 shadow-sm">
-                <ShieldCheck className="h-4 w-4 text-slate-700" />
-                Secure verification
-              </span>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-background py-24">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="font-serif text-3xl md:text-4xl text-primary text-center">
+            Trusted Chess Infrastructure
+          </h2>
+          <div className="mt-10 grid gap-6 md:grid-cols-3 text-center md:divide-x md:divide-border">
+            <div className="md:px-6">
+              <p className="text-6xl font-bold text-primary tracking-tight">150+</p>
+              <p className="mt-2 uppercase tracking-widest text-xs text-muted-foreground">
+                Active Players
+              </p>
+            </div>
+            <div className="md:px-6">
+              <p className="text-6xl font-bold text-primary tracking-tight">40+</p>
+              <p className="mt-2 uppercase tracking-widest text-xs text-muted-foreground">
+                Annual Events
+              </p>
+            </div>
+            <div className="md:px-6">
+              <p className="text-6xl font-bold text-primary tracking-tight">12</p>
+              <p className="mt-2 uppercase tracking-widest text-xs text-muted-foreground">
+                District Clubs
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Quick actions */}
-      <section className="grid grid-cols-1 gap-5 md:grid-cols-2">
-        <Link
-          href="/events"
-          className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30"
-        >
-          <div className="absolute right-4 top-4 h-16 w-16 rounded-full bg-slate-200/40 blur-2xl" />
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-            Tournaments
-          </p>
-          <p className="mt-3 text-2xl font-semibold text-slate-900">
-            Explore Events
-          </p>
-          <p className="text-sm text-slate-700 mt-1">
-            See schedules, venues, and registration details.
-          </p>
-          <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-slate-900/20 transition group-hover:translate-x-0.5">
-            View upcoming events
-            <span aria-hidden="true">→</span>
-          </div>
-        </Link>
-
-        <Link
-          href="/players"
-          className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/20"
-        >
-          <div className="absolute right-4 top-4 h-16 w-16 rounded-full bg-slate-200/30 blur-2xl" />
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-            Verification
-          </p>
-          <p className="mt-3 text-2xl font-semibold text-slate-900">
-            Find a Player
-          </p>
-          <p className="text-sm text-slate-700 mt-1">
-            Check registration status in seconds.
-          </p>
-          <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition group-hover:translate-x-0.5">
-            Search players
-            <span aria-hidden="true">→</span>
-          </div>
-        </Link>
-      </section>
-
-      {/* Info */}
-      <section className="space-y-4 rounded-3xl border border-slate-100 bg-white/85 p-4 shadow-sm md:p-6">
-        <div className="rounded-2xl border border-gray-100 bg-white/70 p-5 shadow-sm">
-          <p className="text-sm text-gray-600">
-            This portal is used by players, coaches, referees, and organizers to
-            manage chess event participation and verification.
-          </p>
-        </div>
-      </section>
-
-      {/* Association members slider */}
-      <section className="space-y-4 rounded-3xl border border-slate-100 bg-white/85 p-4 shadow-sm md:p-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Panipat Chess Association
+      <section className="bg-surface border-t border-border py-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="font-serif text-3xl md:text-4xl text-primary text-center">
+            Recent Tournament Highlights
           </h2>
-          <span className="text-xs text-gray-400">Member associations</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-600">
-            Executive committee members
-          </p>
-          <div className="hidden items-center gap-2 md:flex">
-            <button
-              type="button"
-              onClick={() => {
-                if (!members.length) return;
-                setActiveMemberSlide(
-                  (prev) => (prev - 1 + members.length) % members.length,
-                );
-              }}
-              disabled={!members.length}
-              className="rounded-full border border-gray-200 bg-white px-2 py-1 text-xs font-semibold text-gray-600 shadow-sm hover:bg-gray-50"
-              aria-label="Previous member"
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (!members.length) return;
-                setActiveMemberSlide((prev) => (prev + 1) % members.length);
-              }}
-              disabled={!members.length}
-              className="rounded-full border border-gray-200 bg-white px-2 py-1 text-xs font-semibold text-gray-600 shadow-sm hover:bg-gray-50"
-              aria-label="Next member"
-            >
-              ›
-            </button>
+          <div className="w-16 h-[2px] bg-accent mx-auto mt-3 mb-12" />
+          <div className="flex gap-6 overflow-x-auto scrollbar-hide" ref={sliderRef}>
+            {[
+              '/chess_board.png',
+              '/chess_another_hero_banner.jpg',
+              ...images.map((img) => img.image_url),
+            ].map((src, idx) => (
+              <div
+                key={`${src}-${idx}`}
+                className="relative min-w-[280px] bg-surface border border-border rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
+              >
+                <Image
+                  src={src}
+                  alt="Tournament highlight"
+                  width={400}
+                  height={280}
+                  className="w-full h-48 object-cover rounded-xl"
+                />
+                <div className="absolute bottom-3 left-3 bg-dark/60 text-primary-foreground text-xs px-3 py-1 rounded-full">
+                  Tournament Highlight
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-        <div
-          ref={memberSliderRef}
-          className="flex gap-4 overflow-x-auto pb-2 scroll-smooth"
-        >
-          {members.map((member, index) => {
-            return (
-              <button
+      </section>
+
+      <section className="bg-background border-t border-border py-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="bg-surface border border-border rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-8">
+              <h3 className="font-serif text-xl text-primary font-semibold">Explore Events</h3>
+              <p className="mt-2 text-muted-foreground">
+                View upcoming official tournaments and registration details.
+              </p>
+              <div className="mt-5">
+                <Link
+                  href="/events"
+                  className="inline-flex items-center bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300 shadow-md hover:shadow-lg rounded-full px-6 py-2"
+                >
+                  View Events →
+                </Link>
+              </div>
+            </div>
+
+            <div className="bg-surface border border-border rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-8">
+              <h3 className="font-serif text-xl text-primary font-semibold">Search Players</h3>
+              <p className="mt-2 text-muted-foreground">
+                Find players, coaches, and referees by city or state.
+              </p>
+              <div className="mt-5">
+                <Link
+                  href="/players"
+                  className="inline-flex items-center bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300 shadow-md hover:shadow-lg rounded-full px-6 py-2"
+                >
+                  View Players →
+                </Link>
+              </div>
+            </div>
+
+            <div className="bg-surface border border-border rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-8">
+              <h3 className="font-serif text-xl text-primary font-semibold">Support Chess</h3>
+              <p className="mt-2 text-muted-foreground">
+                Help us organize tournaments and grow chess access for the community.
+              </p>
+              <div className="mt-5">
+                <button
+                  onClick={() => setShowDonate(true)}
+                  className="inline-flex items-center bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300 shadow-md hover:shadow-lg rounded-full px-6 py-2"
+                >
+                  Donate via PhonePe
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-surface border-t border-border py-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="font-serif text-3xl md:text-4xl text-primary text-center">
+            Member Associations
+          </h2>
+          <div className="mt-8 flex gap-6 overflow-x-auto pb-2 scroll-smooth" ref={memberSliderRef}>
+            {members.map((member, index) => (
+              <div
                 key={member.id}
-                type="button"
-                onClick={() => setActiveModal({ type: 'member', index })}
-                className="group relative min-w-[240px] max-w-[260px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md md:min-w-[280px]"
+                className="group relative min-w-[240px] max-w-[260px] bg-surface border border-border rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
               >
-                <div className="relative h-56 w-full overflow-hidden bg-white">
-                  {failedMemberImages.includes(index) ? (
-                    <div className="flex h-full items-center justify-center bg-slate-100 text-sm text-slate-500">
-                      Image unavailable
-                    </div>
-                  ) : (
-                    <>
-                      {loadingMemberImages[index] && (
-                        <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" />
-                      )}
-                      <Image
-                        key={`member-${index}-${memberRetry[index] || 0}`}
-                        src={`${memberUrls[index]}${
-                          memberRetry[index] ? `?retry=${memberRetry[index]}` : ''
-                        }`}
-                        alt={member.name}
-                        fill
-                        sizes="(max-width: 768px) 260px, 280px"
-                        quality={70}
-                        className={`object-contain transition-transform duration-300 group-hover:scale-105 ${
-                          loadingMemberImages[index] ? 'opacity-0' : 'opacity-100'
-                        }`}
-                        onError={() => {
-                          setLoadingMemberImages((prev) => {
-                            const next = [...prev];
-                            next[index] = false;
-                            return next;
-                          });
-                          const retryCount = memberRetry[index] || 0;
-                          if (retryCount < 1) {
-                            setTimeout(() => {
-                              setLoadingMemberImages((prev) => {
-                                const next = [...prev];
-                                next[index] = true;
-                                return next;
-                              });
-                              setMemberRetry((prev) => {
-                                const next = [...prev];
-                                next[index] = (next[index] || 0) + 1;
-                                return next;
-                              });
-                            }, 800);
-                            return;
+                <button
+                  type="button"
+                  onClick={() => setActiveModal({ type: 'member', index })}
+                  className="block w-full text-left"
+                >
+                  <div className="relative h-56 w-full overflow-hidden bg-surface">
+                    {failedMemberImages.includes(index) ? (
+                      <div className="flex h-full items-center justify-center bg-surface text-sm text-muted-foreground">
+                        Image unavailable
+                      </div>
+                    ) : (
+                      <>
+                        {loadingMemberImages[index] && (
+                          <div className="absolute inset-0 animate-pulse bg-surface" />
+                        )}
+                        <Image
+                          key={`member-${index}-${memberRetry[index] || 0}`}
+                          src={`${memberUrls[index]}${
+                            memberRetry[index] ? `?retry=${memberRetry[index]}` : ''
+                          }`}
+                          alt={member.name}
+                          fill
+                          sizes="(max-width: 768px) 260px, 280px"
+                          className={`object-contain transition-transform duration-300 group-hover:scale-105 ${
+                            loadingMemberImages[index] ? 'opacity-0' : 'opacity-100'
+                          }`}
+                          onError={() => {
+                            setLoadingMemberImages((prev) => {
+                              const next = [...prev];
+                              next[index] = false;
+                              return next;
+                            });
+                            const retryCount = memberRetry[index] || 0;
+                            if (retryCount < 1) {
+                              setTimeout(() => {
+                                setLoadingMemberImages((prev) => {
+                                  const next = [...prev];
+                                  next[index] = true;
+                                  return next;
+                                });
+                                setMemberRetry((prev) => {
+                                  const next = [...prev];
+                                  next[index] = (next[index] || 0) + 1;
+                                  return next;
+                                });
+                              }, 800);
+                              return;
+                            }
+                            setFailedMemberImages((prev) =>
+                              prev.includes(index) ? prev : [...prev, index],
+                            );
+                          }}
+                          onLoadingComplete={() =>
+                            setLoadingMemberImages((prev) => {
+                              const next = [...prev];
+                              next[index] = false;
+                              return next;
+                            })
                           }
-                          setFailedMemberImages((prev) =>
-                            prev.includes(index) ? prev : [...prev, index],
-                          );
-                        }}
-                        onLoad={() =>
-                          setLoadingMemberImages((prev) => {
-                            const next = [...prev];
-                            next[index] = false;
-                            return next;
-                          })
-                        }
-                      />
-                    </>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/5 to-transparent" />
-                </div>
-                <div className="absolute bottom-3 left-3 right-3 rounded-xl bg-white/85 px-3 py-2 text-left shadow-sm backdrop-blur">
-                  <p className="text-base font-semibold text-slate-900">
-                    {member.name}
-                  </p>
-                  <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                    {member.title}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-        <div className="flex items-center justify-center gap-2 pt-2">
-          {members.map((_, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => setActiveMemberSlide(idx)}
-              className={`h-2.5 w-2.5 rounded-full transition ${
-                idx === activeMemberSlide
-                  ? 'bg-slate-800'
-                  : 'bg-slate-300 hover:bg-slate-400'
-              }`}
-              aria-label={`Go to member ${idx + 1}`}
-            />
-          ))}
+                        />
+                      </>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-dark/40 via-dark/10 to-transparent" />
+                  </div>
+                  <div className="absolute bottom-3 left-3 right-3 rounded-lg bg-surface/90 px-3 py-2 text-left shadow-sm">
+                    <p className="text-base font-semibold text-primary">
+                      {member.name}
+                    </p>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      {member.title}
+                    </p>
+                  </div>
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Support Chess */}
-      <section className="space-y-3 rounded-3xl border border-slate-200 bg-slate-50/80 p-5 shadow-sm md:p-6">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-700">
-          Support Chess Development
-        </h2>
-        <p className="text-sm text-slate-600 max-w-2xl">
-          Your voluntary contribution helps us organize tournaments, support young
-          players, and keep the Chess Registry accessible for the community.
-        </p>
-        <button
-          onClick={() => setShowDonate(true)}
-          className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-slate-900/15 transition hover:bg-slate-800"
-        >
-          Donate via PhonePe
-        </button>
-      </section>
-
-      {/* Image Modal */}
       {activeModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-dark/70 p-4 backdrop-blur-sm"
           onClick={() => setActiveModal(null)}
           onTouchStart={(event) => {
             const touch = event.touches[0];
             if (!touch) return;
-            (event.currentTarget as HTMLElement).dataset.touchStart = String(touch.clientX);
+            (event.currentTarget as HTMLElement).dataset.touchStart = String(
+              touch.clientX,
+            );
           }}
           onTouchEnd={(event) => {
             const start = Number(
@@ -639,12 +461,12 @@ export default function HomePage() {
             <button
               onClick={() => setActiveModal(null)}
               aria-label="Close"
-              className="absolute -top-3 -right-3 rounded-full bg-white p-2 shadow transition hover:bg-gray-100"
+              className="absolute -top-3 -right-3 rounded-full bg-background p-2 shadow transition hover:bg-surface"
             >
-              <X className="h-4 w-4 text-gray-700" />
+              <X className="h-4 w-4 text-primary" />
             </button>
 
-            <div className="relative overflow-hidden rounded-2xl bg-white">
+            <div className="relative overflow-hidden rounded-2xl bg-background">
               {(galleryImage || memberImage) && (
                 <Image
                   src={galleryImage || memberImage || ''}
@@ -659,81 +481,78 @@ export default function HomePage() {
                 />
               )}
               {activeModal.type === 'member' && members[activeModal.index] && (
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-6 text-white">
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-dark/70 via-dark/20 to-transparent p-6 text-primary-foreground">
                   <p className="text-lg font-semibold">
                     {members[activeModal.index].name}
                   </p>
-                  <p className="text-sm text-white/80">
+                  <p className="text-sm text-primary-foreground/80">
                     {members[activeModal.index].title}
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="mt-4 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={goPrev}
-                className="rounded-full border border-white/30 bg-white/90 px-3 py-2 text-lg font-semibold text-gray-700 shadow-sm hover:bg-white"
-                aria-label="Previous image"
-              >
-                ‹
-              </button>
-              <button
-                type="button"
-                onClick={goNext}
-                className="rounded-full border border-white/30 bg-white/90 px-3 py-2 text-lg font-semibold text-gray-700 shadow-sm hover:bg-white"
-                aria-label="Next image"
-              >
-                ›
-              </button>
-            </div>
+            <button
+              onClick={goPrev}
+              aria-label="Previous"
+              className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-background/90 p-2 shadow transition hover:bg-background"
+            >
+              ‹
+            </button>
+            <button
+              onClick={goNext}
+              aria-label="Next"
+              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-background/90 p-2 shadow transition hover:bg-background"
+            >
+              ›
+            </button>
           </div>
         </div>
       )}
 
-      {/* Donate Modal */}
       {showDonate && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-dark/70 p-4"
           onClick={() => setShowDonate(false)}
         >
           <div
-            className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-xl"
+            className="w-full max-w-md rounded-2xl bg-background p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">
-                  Support Chess Development
-                </p>
-                <p className="text-xs text-slate-600">
-                  Any amount is appreciated.
-                </p>
-              </div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-primary">
+                Support Chess Development
+              </h3>
               <button
                 onClick={() => setShowDonate(false)}
-                className="rounded-full border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
-                aria-label="Close donation modal"
+                className="rounded-full bg-surface p-2"
+                aria-label="Close"
               >
-                Close
+                <X className="h-4 w-4 text-primary" />
               </button>
             </div>
-
-            <div className="mt-4 flex flex-col items-center gap-3">
-              <div className="h-40 w-40 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center text-xs text-slate-500">
+            <p className="mt-2 text-sm text-muted-foreground">
+              Any amount is appreciated and helps us organize more tournaments.
+            </p>
+            <div className="mt-5 flex flex-col items-center gap-4">
+              <div className="h-40 w-40 rounded-2xl border border-border bg-surface flex items-center justify-center text-xs text-muted-foreground">
                 PhonePe QR
               </div>
-              <div className="text-xs text-slate-600">
-                UPI ID: your-upi-id@upi
+              <div className="text-center text-sm text-muted-foreground">
+                UPI: your-upi-id@upi
               </div>
-              <p className="text-xs text-slate-500 text-center">
-                This is a voluntary contribution to support local chess activities.
-              </p>
             </div>
+            <button
+              onClick={() => setShowDonate(false)}
+              className="mt-6 w-full rounded-full bg-primary text-primary-foreground py-2 font-medium hover:bg-accent hover:text-accent-foreground transition-all duration-300"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
     </div>
+
+    
   );
 }

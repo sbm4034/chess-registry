@@ -1,21 +1,10 @@
 'use client';
 
-import { useState,useEffect } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { uploadDocument } from '@/lib/supabase/uploadDocument';
 import { useRouter } from 'next/navigation';
-import { Playfair_Display, Manrope } from 'next/font/google';
 import { Camera, FileText, ShieldCheck, Award } from 'lucide-react';
-
-const display = Playfair_Display({
-  subsets: ['latin'],
-  weight: ['600', '700'],
-});
-
-const sans = Manrope({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-});
 
 
 export default function RegisterPage() {
@@ -27,6 +16,7 @@ export default function RegisterPage() {
   const [dobFile, setDobFile] = useState<File | null>(null);
   const [certFiles, setCertFiles] = useState<FileList | null>(null);
   const [loading, setLoading] = useState(false);
+  const supabase = createClient();
 
   const router = useRouter();
 
@@ -80,19 +70,18 @@ export default function RegisterPage() {
         .getPublicUrl(filePath).data.publicUrl;
     }
 
-    // 1️⃣ Create profile
     const { error: profileError } = await supabase.from('user_profiles').upsert(
-  {
-    id: user.id,
-    name,
-    role,
-    city,
-    profile_photo_url: profilePhotoUrl || null,
-  },
-  {
-    onConflict: 'id'
-  }
-);
+      {
+        id: user.id,
+        name,
+        role,
+        city,
+        profile_photo_url: profilePhotoUrl || null,
+      },
+      {
+        onConflict: 'id',
+      },
+    );
 
     if (profileError) {
       alert(profileError.message);
@@ -100,18 +89,16 @@ export default function RegisterPage() {
       return;
     }
 
-    // 2️⃣ Upload DOB
     if (dobFile) {
       const dobUrl = await uploadDocument(user.id, dobFile, 'dob');
 
       await supabase.from('documents').insert({
         user_id: user.id,
         type: 'dob',
-        file_url: dobUrl
+        file_url: dobUrl,
       });
     }
 
-    // 3️⃣ Upload certificates
     if (certFiles) {
       for (const file of Array.from(certFiles)) {
         const certUrl = await uploadDocument(user.id, file, 'certificate');
@@ -119,7 +106,7 @@ export default function RegisterPage() {
         await supabase.from('documents').insert({
           user_id: user.id,
           type: 'certificate',
-          file_url: certUrl
+          file_url: certUrl,
         });
       }
     }
@@ -129,177 +116,147 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className={`${sans.className} min-h-screen px-4 py-8`}>
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-[radial-gradient(1200px_600px_at_20%_-10%,rgba(30,41,59,0.08),transparent_60%),radial-gradient(900px_500px_at_85%_10%,rgba(15,23,42,0.06),transparent_55%),linear-gradient(180deg,#ffffff_0%,#f8fafc_60%,#ffffff_100%)]" />
-        <div
-          className="absolute inset-0 bg-no-repeat opacity-[0.04]"
-          style={{
-            backgroundImage: "url('/logo.png')",
-            backgroundPosition: '50% 35%',
-            backgroundSize: 'clamp(240px, 40vw, 520px) auto',
-          }}
-        />
+    <div className="bg-background min-h-screen flex items-center justify-center py-16 font-sans">
+      <div className="w-full max-w-3xl px-4 sm:px-6 lg:px-8">
+        <div className="bg-surface border border-border rounded-2xl shadow-lg p-6 sm:p-8 md:p-10">
+          <div className="text-center">
+            <h1 className="font-serif text-2xl md:text-3xl text-primary tracking-tight">
+              Complete Registration
+            </h1>
+            <div className="w-20 h-[2px] bg-accent mx-auto mt-4 mb-8" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2 rounded-lg border border-border bg-background p-4">
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 rounded-full border border-border bg-surface flex items-center justify-center overflow-hidden">
+                  {profilePhotoPreview ? (
+                    <img src={profilePhotoPreview} alt="Profile preview" className="h-full w-full object-cover" />
+                  ) : (
+                    <Camera className="h-6 w-6 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-primary">Profile Photo</p>
+                  <p className="text-xs text-muted-foreground">Shown on your public player profile</p>
+                  <label className="mt-2 inline-flex items-center gap-2 bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300 rounded-full px-5 py-2 text-xs font-semibold shadow-md cursor-pointer">
+                    <Camera className="h-4 w-4" />
+                    Upload profile photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setProfilePhotoFile(file);
+                        setProfilePhotoPreview(file ? URL.createObjectURL(file) : null);
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium text-primary">Full Name</label>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full mt-1 bg-background border border-border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-primary"
+                placeholder="Enter full name"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">As per official records</p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-primary">City</label>
+              <input
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="w-full mt-1 bg-background border border-border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-primary"
+                placeholder="City"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-primary">Role</label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full mt-1 bg-background border border-border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-primary"
+              >
+                <option>Player</option>
+                <option>Coach</option>
+                <option>Referee</option>
+              </select>
+            </div>
+
+            <div className="md:col-span-2 bg-background border border-border rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <ShieldCheck className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-primary">DOB Proof</p>
+                  <p className="text-xs text-muted-foreground">
+                    Required • Private • Used for age verification
+                  </p>
+                  <label className="mt-3 inline-flex items-center gap-2 bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300 rounded-full px-5 py-2 text-xs font-semibold cursor-pointer">
+                    <FileText className="h-4 w-4" />
+                    Upload DOB proof
+                    <input
+                      type="file"
+                      hidden
+                      onChange={(e) => setDobFile(e.target.files?.[0] || null)}
+                    />
+                  </label>
+                  {dobFile && (
+                    <p className="mt-2 text-xs text-muted-foreground">Selected: {dobFile.name}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-2 bg-background border border-border rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Award className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-primary">Chess Certificates</p>
+                  <p className="text-xs text-muted-foreground">
+                    Achievement • Public • Visible on your profile
+                  </p>
+                  <label className="mt-3 inline-flex items-center gap-2 bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300 rounded-full px-5 py-2 text-xs font-semibold cursor-pointer">
+                    <FileText className="h-4 w-4" />
+                    Upload certificates
+                    <input
+                      type="file"
+                      multiple
+                      hidden
+                      onChange={(e) => setCertFiles(e.target.files || null)}
+                    />
+                  </label>
+                  {certFiles && certFiles.length > 0 && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {certFiles.length} file(s) selected
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 flex flex-col sm:flex-row gap-4 sm:items-center">
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300 rounded-full px-8 py-3 shadow-md hover:shadow-lg font-medium disabled:opacity-60"
+            >
+              Submit Registration
+            </button>
+            <p className="text-xs text-muted-foreground">
+              Documents are verified manually by tournament organizers.
+            </p>
+          </div>
+        </div>
       </div>
-  <div className="mx-auto max-w-md space-y-6 rounded-3xl border border-slate-200 bg-white/85 p-6 shadow-sm backdrop-blur">
-
-<div>
-  <h1 className={`${display.className} text-2xl text-slate-900`}>
-    Complete Registration
-  </h1>
-  <p className="text-sm text-slate-600 mt-1">
-    Register once to participate in official chess events
-  </p>
-</div>
-
-
-     <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 space-y-4 shadow-sm">
-  <h2 className="text-lg font-medium text-slate-900">
-    Player Details
-  </h2>
-
-  <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-3">
-    <div className="h-16 w-16 rounded-full border border-slate-200 bg-slate-100 flex items-center justify-center overflow-hidden">
-      {profilePhotoPreview ? (
-        <img src={profilePhotoPreview} alt="Profile preview" className="h-full w-full object-cover" />
-      ) : (
-        <Camera className="h-6 w-6 text-slate-500" />
-      )}
-    </div>
-    <div className="flex-1">
-      <p className="text-sm font-semibold text-slate-900">Profile Photo</p>
-      <p className="text-xs text-slate-500">
-        Shown on your public player profile
-      </p>
-      <label className="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm cursor-pointer">
-        <Camera className="h-4 w-4" />
-        Upload profile photo
-        <input
-          type="file"
-          accept="image/*"
-          hidden
-          onChange={(e) => {
-            const file = e.target.files?.[0] || null;
-            setProfilePhotoFile(file);
-            setProfilePhotoPreview(file ? URL.createObjectURL(file) : null);
-          }}
-        />
-      </label>
-    </div>
-  </div>
-
-  <div>
-    <label className="text-sm text-slate-600">
-      Full Name
-    </label>
-    <input
-      value={name}
-      onChange={(e) => setName(e.target.value)}
-      className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-      placeholder="Enter full name"
-    />
-  </div>
-
-  <div>
-    <label className="text-sm text-slate-600">
-      City
-    </label>
-    <input
-      value={city}
-      onChange={(e) => setCity(e.target.value)}
-      className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-900 shadow-sm"
-      placeholder="City"
-    />
-  </div>
-
-  <div>
-    <label className="text-sm text-slate-600">
-      Role
-    </label>
-    <select
-      value={role}
-      onChange={(e) => setRole(e.target.value)}
-      className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-900 shadow-sm"
-    >
-      <option>Player</option>
-      <option>Coach</option>
-      <option>Referee</option>
-    </select>
-  </div>
-</div>
-<div className="rounded-2xl border border-slate-200 bg-white/90 p-4 space-y-4 shadow-sm">
-  <h2 className="text-lg font-medium text-slate-900">
-    Documents
-  </h2>
-
-  <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-    <div className="flex items-center gap-3">
-      <ShieldCheck className="h-5 w-5 text-slate-600" />
-      <div>
-        <p className="text-sm font-semibold text-slate-900">DOB Proof</p>
-        <p className="text-xs text-slate-500">
-          Required · Private · Used for age verification
-        </p>
-      </div>
-    </div>
-    <label className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm cursor-pointer">
-      <FileText className="h-4 w-4" />
-      Upload DOB proof
-      <input
-        type="file"
-        hidden
-        onChange={(e) => setDobFile(e.target.files?.[0] || null)}
-      />
-    </label>
-    {dobFile && (
-      <p className="text-xs text-slate-600">
-        Selected: {dobFile.name}
-      </p>
-    )}
-  </div>
-
-  <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-    <div className="flex items-center gap-3">
-      <Award className="h-5 w-5 text-slate-600" />
-      <div>
-        <p className="text-sm font-semibold text-slate-900">Chess Certificates</p>
-        <p className="text-xs text-slate-500">
-          Achievement · Public · Visible on your profile
-        </p>
-      </div>
-    </div>
-    <label className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm cursor-pointer">
-      <FileText className="h-4 w-4" />
-      Upload certificates
-      <input
-        type="file"
-        multiple
-        hidden
-        onChange={(e) => setCertFiles(e.target.files || null)}
-      />
-    </label>
-    {certFiles && certFiles.length > 0 && (
-      <p className="text-xs text-slate-600">
-        {certFiles.length} file(s) selected
-      </p>
-    )}
-  </div>
-</div>
-<div className="rounded-2xl border border-slate-200 bg-white/90 p-4 space-y-3 shadow-sm">
-  <h2 className="text-sm font-semibold text-slate-800">Finalize Registration</h2>
-  <button
-    onClick={handleSubmit}
-    disabled={loading}
-    className="w-full rounded-full bg-slate-900 text-white py-3 font-semibold text-base shadow-lg shadow-slate-900/20 disabled:opacity-60"
-  >
-  Submit Registration
-  </button>
-  <p className="text-xs text-slate-500 text-center">
-    Documents are verified manually by tournament organizers.
-  </p>
-</div>
-
-    </div>
     </div>
   );
 }

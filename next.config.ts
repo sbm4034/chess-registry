@@ -1,12 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-   images: {
-    domains: [
-      'wrkbecdjmehklugtcpyt.supabase.co',
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'wrkbecdjmehklugtcpyt.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
     ],
-    // include both configured quality options used by images
     qualities: [70, 75],
   },
 };

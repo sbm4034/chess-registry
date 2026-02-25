@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 
 type DocumentType = 'dob' | 'certificate';
 
@@ -8,6 +8,7 @@ export async function uploadDocument(
   type: DocumentType
 ) {
   const isPublic = type === 'certificate';
+  const supabase = createClient();
 
   const bucket = isPublic
     ? 'documents-public'

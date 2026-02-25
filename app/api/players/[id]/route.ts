@@ -1,14 +1,16 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
-  const supabase = createClient();
+  const { id } = await context.params
+
+  const supabase = await createClient()
 
   const { data, error } = await supabase
-    .from('user_profiles')
+    .from("user_profiles")
     .select(`
       id,
       name,
@@ -18,12 +20,15 @@ export async function GET(
       bio,
       profile_photo_url
     `)
-    .eq('id', params.id)
-    .single();
+    .eq("id", id)
+    .single()
 
   if (error || !data) {
-    return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    return NextResponse.json(
+      { error: "Profile not found" },
+      { status: 404 }
+    )
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json(data)
 }
