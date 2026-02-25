@@ -5,12 +5,15 @@ import { createClient } from '@/lib/supabase/client';
 import { uploadDocument } from '@/lib/supabase/uploadDocument';
 import { useRouter } from 'next/navigation';
 import { Camera, FileText, ShieldCheck, Award } from 'lucide-react';
-
+import { INDIAN_STATES } from '@/lib/constants';
+import { allowedTypes  } from '@/lib/constants';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
-  const [role, setRole] = useState('player');
+  const [role, setRole] = useState<'player' | 'coach' | 'referee'>('player');
   const [city, setCity] = useState('');
+  const [fideId, setFideId] = useState('');
+  const [state, setState] = useState('');
   const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
   const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
   const [dobFile, setDobFile] = useState<File | null>(null);
@@ -19,7 +22,6 @@ export default function RegisterPage() {
   const supabase = createClient();
 
   const router = useRouter();
-
   useEffect(() => {
     const checkProfile = async () => {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -75,7 +77,9 @@ export default function RegisterPage() {
         id: user.id,
         name,
         role,
+        state,
         city,
+        fide_id: fideId || null,
         profile_photo_url: profilePhotoUrl || null,
       },
       {
@@ -90,26 +94,45 @@ export default function RegisterPage() {
     }
 
     if (dobFile) {
-      const dobUrl = await uploadDocument(user.id, dobFile, 'dob');
 
-      await supabase.from('documents').insert({
-        user_id: user.id,
-        type: 'dob',
-        file_url: dobUrl,
-      });
-    }
+  if (!allowedTypes.includes(dobFile.type)) {
+    alert('Only PDF, JPG, PNG files are allowed for DOB proof.');
+    setLoading(false);
+    return;
+  }
+
+  const dobUrl = await uploadDocument(user.id, dobFile, 'dob');
+
+  await supabase.from('documents').insert({
+    user_id: user.id,
+    type: 'dob',
+    file_url: dobUrl,
+  });
+}
 
     if (certFiles) {
-      for (const file of Array.from(certFiles)) {
-        const certUrl = await uploadDocument(user.id, file, 'certificate');
+  const filesArray = Array.from(certFiles);
 
-        await supabase.from('documents').insert({
-          user_id: user.id,
-          type: 'certificate',
-          file_url: certUrl,
-        });
-      }
-    }
+  const invalidFile = filesArray.find(
+    (file) => !allowedTypes.includes(file.type)
+  );
+
+  if (invalidFile) {
+    alert(`File "${invalidFile.name}" is not supported. Only PDF, JPG, PNG allowed.`);
+    setLoading(false);
+    return;
+  }
+
+  for (const file of filesArray) {
+    const certUrl = await uploadDocument(user.id, file, 'certificate');
+
+    await supabase.from('documents').insert({
+      user_id: user.id,
+      type: 'certificate',
+      file_url: certUrl,
+    });
+  }
+}
 
     setLoading(false);
     router.push('/profile');
@@ -167,7 +190,21 @@ export default function RegisterPage() {
               />
               <p className="mt-1 text-xs text-muted-foreground">As per official records</p>
             </div>
-
+            <div>
+              <label className="text-sm font-medium text-primary">State</label>
+              <select
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                className="w-full mt-1 bg-background border border-border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-primary"
+              >
+                <option value="">Select state</option>
+                {INDIAN_STATES.map((stateName) => (
+                  <option key={stateName} value={stateName}>
+                    {stateName}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="text-sm font-medium text-primary">City</label>
               <input
@@ -177,17 +214,26 @@ export default function RegisterPage() {
                 placeholder="City"
               />
             </div>
-
+            <div>
+              <label className="text-sm font-medium text-primary">FIDE ID</label>
+              <input
+                value={fideId}
+                onChange={(e) => setFideId(e.target.value)}
+                className="w-full mt-1 bg-background border border-border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-primary"
+                placeholder="Optional (e.g., 12345678)"
+              />
+            </div>
             <div>
               <label className="text-sm font-medium text-primary">Role</label>
               <select
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
+                onChange={(e) =>
+                setRole(e.target.value as 'player' | 'coach' | 'referee')}
                 className="w-full mt-1 bg-background border border-border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-primary"
               >
-                <option>Player</option>
-                <option>Coach</option>
-                <option>Referee</option>
+                  <option value="player">Player</option>
+                  <option value="coach">Coach</option>
+                  <option value="referee">Referee</option>
               </select>
             </div>
 
@@ -204,6 +250,7 @@ export default function RegisterPage() {
                     Upload DOB proof
                     <input
                       type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
                       hidden
                       onChange={(e) => setDobFile(e.target.files?.[0] || null)}
                     />
@@ -228,6 +275,7 @@ export default function RegisterPage() {
                     Upload certificates
                     <input
                       type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
                       multiple
                       hidden
                       onChange={(e) => setCertFiles(e.target.files || null)}

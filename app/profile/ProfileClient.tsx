@@ -7,6 +7,7 @@ import { uploadDocument } from '@/lib/supabase/uploadDocument';
 import { Check, Copy, FileText, MapPin, X } from 'lucide-react';
 import { Playfair_Display, Manrope } from 'next/font/google';
 import PlayerAvatar from '@/app/components/PlayerAvatar';
+import { INDIAN_STATES } from '@/lib/constants';
 
 type Doc = {
   id: string;
@@ -53,38 +54,6 @@ export default function ProfileClient({
   const [isEditing, setIsEditing] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
-  const INDIAN_STATES = [
-  'Andhra Pradesh',
-  'Arunachal Pradesh',
-  'Assam',
-  'Bihar',
-  'Chhattisgarh',
-  'Delhi',
-  'Goa',
-  'Gujarat',
-  'Haryana',
-  'Himachal Pradesh',
-  'Jammu and Kashmir',
-  'Jharkhand',
-  'Karnataka',
-  'Kerala',
-  'Madhya Pradesh',
-  'Maharashtra',
-  'Manipur',
-  'Meghalaya',
-  'Mizoram',
-  'Nagaland',
-  'Odisha',
-  'Punjab',
-  'Rajasthan',
-  'Sikkim',
-  'Tamil Nadu',
-  'Telangana',
-  'Tripura',
-  'Uttar Pradesh',
-  'Uttarakhand',
-  'West Bengal',
-];
 
   // ─────────────────────────────────────────────
   // LOAD
