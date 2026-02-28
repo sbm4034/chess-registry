@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Calendar, MapPin, Search, X } from 'lucide-react';
+import LoadingButton from '@/app/components/ui/LoadingButton';
 
 export default function EventsPage() {
   const [events, setEvents] = useState<any[]>([]);
@@ -183,14 +184,16 @@ export default function EventsPage() {
               </div>
 
               <div className="flex gap-2">
-                <button
+                <LoadingButton
                   onClick={triggerSearch}
-                  disabled={loading}
+                  loading={loading}
+                  loadingText="Searching..."
                   className="flex items-center justify-center gap-2 rounded-full px-6 py-3 bg-primary text-primary-foreground hover:opacity-90 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                  spinnerClassName="text-primary-foreground"
                 >
                   <Search className="h-4 w-4" />
                   <span className="text-sm">Search</span>
-                </button>
+                </LoadingButton>
 
                 <button
                   onClick={clearFilters}

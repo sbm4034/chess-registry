@@ -1,21 +1,18 @@
 'use client';
 
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
 import { Check, Mail } from 'lucide-react';
-import { PrimaryButton } from '@/app/components/ui/PrimaryButton';
 import { Card } from '@/app/components/ui/Card';
 import { Section } from '@/app/components/ui/Section';
+import LoadingButton from '@/app/components/ui/LoadingButton';
 
 const supabase = createClient();
 
 export default function LoginClient() {
   const searchParams = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Hydration-safe redirect
-  const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`;
 
   const [email, setEmail] = useState(() => {
     if (typeof window === 'undefined') return '';
@@ -74,8 +71,6 @@ export default function LoginClient() {
   }
 };
 
-  const isDisabled = loading || !email;
-
   return (
     <div className="bg-background min-h-screen flex items-center justify-center px-4 py-8 font-sans">
       <Section className="py-8 flex items-center justify-center">
@@ -127,16 +122,16 @@ export default function LoginClient() {
                   <p className="text-sm text-red-600 text-center">{error}</p>
                 )}
 
-                <PrimaryButton
+                <LoadingButton
                   onClick={sendMagicLink}
-                  {...(isDisabled && { disabled: true })}
-                  className="w-full justify-center py-2.5 font-semibold disabled:opacity-60 flex items-center gap-2"
+                  loading={loading}
+                  disabled={!email}
+                  loadingText="Sending link..."
+                  className="w-full justify-center py-2.5 font-semibold disabled:opacity-60 bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300 shadow-md hover:shadow-lg rounded-full"
+                  spinnerClassName="text-primary-foreground"
                 >
-                  {loading && (
-                    <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                  )}
-                  {loading ? 'Sending link…' : 'Send Magic Link'}
-                </PrimaryButton>
+                  Send Magic Link
+                </LoadingButton>
 
                 <p className="text-xs text-muted-foreground text-center">
                   No password required · Secure login · Link expires in a few
@@ -156,13 +151,14 @@ export default function LoginClient() {
 
                 <p className="text-sm font-medium text-primary">{email}</p>
 
-                <button
+                <LoadingButton
                   onClick={sendMagicLink}
-                  disabled={loading}
+                  loading={loading}
+                  loadingText="Sending link..."
                   className="text-sm text-primary hover:text-accent transition"
                 >
                   Didn’t receive it? Resend link
-                </button>
+                </LoadingButton>
               </div>
             )}
           </Card>

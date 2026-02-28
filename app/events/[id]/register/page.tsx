@@ -15,9 +15,9 @@ import {
 import Link from 'next/link';
 import Image from 'next/image';
 import { ChatBubbleOvalLeftEllipsisIcon } from '@heroicons/react/24/outline';
-import { PrimaryButton } from '@/app/components/ui/PrimaryButton';
 import { Card } from '@/app/components/ui/Card';
 import { Section } from '@/app/components/ui/Section';
+import LoadingButton from '@/app/components/ui/LoadingButton';
 
 export default function EventRegisterPage() {
   const supabase = createClient();
@@ -186,13 +186,15 @@ export default function EventRegisterPage() {
                 <p className="text-sm text-gray-600 mt-1">
                   Confirm your participation in this official event.
                 </p>
-                <PrimaryButton
+                <LoadingButton
                   onClick={registerForEvent}
-                  disabled={submitting}
+                  loading={submitting}
+                  loadingText="Registering..."
                   className="mt-4 w-full py-3 text-sm font-semibold shadow-lg shadow-brand-primary/10 disabled:opacity-60"
+                  spinnerClassName="text-primary-foreground"
                 >
-                  {submitting ? 'Registering…' : 'Confirm Registration'}
-                </PrimaryButton>
+                  Confirm Registration
+                </LoadingButton>
                 <p className="mt-3 text-xs text-gray-500">
                   By registering, you agree to event rules.
                 </p>
@@ -232,28 +234,42 @@ export default function EventRegisterPage() {
                 )}
 
                 <p className="text-sm text-gray-700">
-                  Please pay via PhonePe using the QR code below. Mention your <strong>name</strong> and{' '}
+                  Please pay using the QR code below. Mention your <strong>name</strong> and{' '}
                   <strong>event name</strong>.
                 </p>
 
-                <div className="flex flex-col items-center gap-3 rounded-2xl border border-surface-warm bg-white p-4">
-                  <div className="w-40 h-40 border border-surface-warm rounded-xl flex items-center justify-center bg-surface-base text-sm text-gray-600">
-                    PhonePe QR
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-600">
-                    UPI ID:
-                    <span className="font-semibold text-text-default">your-upi-id@upi</span>
-                    <button
-                      onClick={() => navigator.clipboard.writeText('your-upi-id@upi')}
-                      className="rounded-full border border-surface-warm bg-white px-2 py-0.5 text-[10px] font-semibold text-gray-700 hover:bg-surface-base"
-                    >
-                      Copy
-                    </button>
-                  </div>
-                  <p className="text-[11px] text-gray-500 text-center">
-                    Any amount is appreciated and supports local chess activities.
-                  </p>
-                </div>
+                <div className="flex flex-col items-center gap-4 rounded-2xl border border-surface-warm bg-white p-5 shadow-sm">
+  
+  <div className="relative w-44 h-44">
+    <Image
+      src="https://wrkbecdjmehklugtcpyt.supabase.co/storage/v1/object/public/documents-public/QR_code.jpeg"
+      alt="Gpay QR Code"
+      fill
+      className="rounded-xl border border-surface-warm object-contain"
+      sizes="176px"
+      priority
+    />
+  </div>
+
+  <p className="text-xs text-gray-600 text-center">
+    Scan to pay registration fee via any UPI app
+  </p>
+
+  <div className="flex items-center gap-2 text-xs text-gray-600">
+    UPI ID:
+    <span className="font-semibold text-text-default">
+      kavitav1721@okaxis
+    </span>
+
+    <button
+      onClick={() => navigator.clipboard.writeText('kavitav1721@okaxis')}
+      className="rounded-full border border-surface-warm bg-white px-2 py-0.5 text-[10px] font-semibold text-gray-700 hover:bg-surface-base transition"
+    >
+      Copy
+    </button>
+  </div>
+
+</div>
 
                 {event.support_whatsapp && (
                   <Link

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Camera, FileText, ShieldCheck, Award } from 'lucide-react';
 import { INDIAN_STATES } from '@/lib/constants';
 import { allowedTypes  } from '@/lib/constants';
+import LoadingButton from '@/app/components/ui/LoadingButton';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -292,13 +293,15 @@ export default function RegisterPage() {
           </div>
 
           <div className="mt-8 flex flex-col sm:flex-row gap-4 sm:items-center">
-            <button
+            <LoadingButton
               onClick={handleSubmit}
-              disabled={loading}
-              className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300 rounded-full px-8 py-3 shadow-md hover:shadow-lg font-medium disabled:opacity-60"
+              loading={loading}
+              loadingText="Submitting..."
+              className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300 rounded-full px-8 py-3 shadow-md hover:shadow-lg font-medium disabled:opacity-60 inline-flex items-center justify-center gap-2"
+              spinnerClassName="text-primary-foreground"
             >
               Submit Registration
-            </button>
+            </LoadingButton>
             <p className="text-xs text-muted-foreground">
               Documents are verified manually by tournament organizers.
             </p>

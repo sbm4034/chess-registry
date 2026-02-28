@@ -33,8 +33,8 @@ export default function HomePage() {
     supabase
       .from('gallery')
       .select('image_url')
-      .order('created_at', { ascending: false })
-      .limit(6)
+      .order('display_order', { ascending: true })
+      .limit(8)
       .then(({ data }) => {
         const list = data || [];
         setImages(list);
@@ -206,7 +206,7 @@ export default function HomePage() {
               OFFICIAL CHESS REGISTRY
             </p>
             <h1 className="text-5xl md:text-6xl font-serif font-semibold tracking-tight text-primary-foreground">
-              Empowering Chess Across [District]
+              Empowering Chess Across Panipat
             </h1>
             <div className="w-24 h-[3px] bg-accent mx-auto mt-6" />
             <p className="text-lg font-sans text-white/80 max-w-2xl mx-auto">
@@ -235,26 +235,23 @@ export default function HomePage() {
           <h2 className="font-serif text-3xl md:text-4xl text-primary text-center">
             Trusted Chess Infrastructure
           </h2>
-          <div className="mt-10 grid gap-6 md:grid-cols-3 text-center md:divide-x md:divide-border">
-            <div className="md:px-6">
-              <p className="text-6xl font-bold text-primary tracking-tight">150+</p>
-              <p className="mt-2 uppercase tracking-widest text-xs text-muted-foreground">
-                Active Players
-              </p>
-            </div>
-            <div className="md:px-6">
-              <p className="text-6xl font-bold text-primary tracking-tight">40+</p>
-              <p className="mt-2 uppercase tracking-widest text-xs text-muted-foreground">
-                Annual Events
-              </p>
-            </div>
-            <div className="md:px-6">
-              <p className="text-6xl font-bold text-primary tracking-tight">12</p>
-              <p className="mt-2 uppercase tracking-widest text-xs text-muted-foreground">
-                District Clubs
-              </p>
-            </div>
-          </div>
+<div className="mt-10 grid gap-6 md:grid-cols-2 text-center md:divide-x md:divide-border">
+
+  <div className="md:px-6">
+    <p className="text-6xl font-bold text-primary tracking-tight">150+</p>
+    <p className="mt-2 uppercase tracking-widest text-xs text-muted-foreground">
+      Players Participated Over the Years
+    </p>
+  </div>
+
+  <div className="md:px-6">
+    <p className="text-6xl font-bold text-primary tracking-tight">20+</p>
+    <p className="mt-2 uppercase tracking-widest text-xs text-muted-foreground">
+      Tournaments Conducted
+    </p>
+  </div>
+
+</div>
         </div>
       </section>
 
@@ -266,8 +263,6 @@ export default function HomePage() {
           <div className="w-16 h-[2px] bg-accent mx-auto mt-3 mb-12" />
           <div className="flex gap-6 overflow-x-auto scrollbar-hide" ref={sliderRef}>
             {[
-              '/chess_board.png',
-              '/chess_another_hero_banner.jpg',
               ...images.map((img) => img.image_url),
             ].map((src, idx) => (
               <div
@@ -333,7 +328,7 @@ export default function HomePage() {
                   onClick={() => setShowDonate(true)}
                   className="inline-flex items-center bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300 shadow-md hover:shadow-lg rounded-full px-6 py-2"
                 >
-                  Donate via PhonePe
+                  Donate via Gpay
                 </button>
               </div>
             </div>
@@ -535,13 +530,34 @@ export default function HomePage() {
               Any amount is appreciated and helps us organize more tournaments.
             </p>
             <div className="mt-5 flex flex-col items-center gap-4">
-              <div className="h-40 w-40 rounded-2xl border border-border bg-surface flex items-center justify-center text-xs text-muted-foreground">
-                PhonePe QR
-              </div>
-              <div className="text-center text-sm text-muted-foreground">
-                UPI: your-upi-id@upi
-              </div>
-            </div>
+  
+  
+  <div className="relative h-64 w-64 rounded-2xl border border-border bg-white overflow-hidden">
+    <Image
+      src="https://wrkbecdjmehklugtcpyt.supabase.co/storage/v1/object/public/documents-public/QR_code.jpeg"
+      alt="UPI QR Code"
+      fill
+      className="object-contain p-2"
+      sizes="256px"
+      priority
+    />
+  </div>
+
+  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+    UPI:
+    <span className="font-semibold text-primary">
+      kavitav1721@okaxis
+    </span>
+
+    <button
+      onClick={() => navigator.clipboard.writeText('kavitav1721@okaxis')}
+      className="rounded-full border border-border bg-surface px-2 py-0.5 text-xs font-semibold text-primary hover:bg-accent hover:text-accent-foreground transition"
+    >
+      Copy
+    </button>
+  </div>
+
+</div>
             <button
               onClick={() => setShowDonate(false)}
               className="mt-6 w-full rounded-full bg-primary text-primary-foreground py-2 font-medium hover:bg-accent hover:text-accent-foreground transition-all duration-300"

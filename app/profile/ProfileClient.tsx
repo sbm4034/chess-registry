@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { uploadDocument } from '@/lib/supabase/uploadDocument';
@@ -8,6 +8,7 @@ import { Check, Copy, FileText, MapPin, X } from 'lucide-react';
 import { Playfair_Display, Manrope } from 'next/font/google';
 import PlayerAvatar from '@/app/components/PlayerAvatar';
 import { INDIAN_STATES } from '@/lib/constants';
+import LoadingButton from '@/app/components/ui/LoadingButton';
 
 type Doc = {
   id: string;
@@ -54,6 +55,7 @@ export default function ProfileClient({
   const [isEditing, setIsEditing] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   // ─────────────────────────────────────────────
   // LOAD
@@ -235,18 +237,24 @@ const completion = profileCompletion();
                   className="h-20 w-20 md:h-24 md:w-24"
                 />
                 <div>
-                  <label className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-sm cursor-pointer">
-                    {photoUploading ? 'Uploading…' : profile?.profile_photo_url ? 'Change photo' : 'Upload photo'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      hidden
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) uploadProfilePhoto(file);
-                      }}
-                    />
-                  </label>
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) uploadProfilePhoto(file);
+                    }}
+                  />
+                  <LoadingButton
+                    loading={photoUploading}
+                    loadingText="Uploading..."
+                    onClick={() => photoInputRef.current?.click()}
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-sm cursor-pointer hover:bg-slate-50 transition"
+                  >
+                    {profile?.profile_photo_url ? 'Change photo' : 'Upload photo'}
+                  </LoadingButton>
                   <p className="mt-1 text-xs text-slate-500">
                     Shown on your public player profile
                   </p>

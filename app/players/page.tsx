@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MapPin, Search } from 'lucide-react';
+import LoadingButton from '@/app/components/ui/LoadingButton';
 
 type Player = {
   id: string;
@@ -145,14 +146,16 @@ export default function PlayersPage() {
               </select>
 
               <div className="flex gap-2">
-                <button
+                <LoadingButton
                   onClick={searchPlayers}
-                  disabled={loading}
+                  loading={loading}
+                  loadingText="Searching..."
                   className="flex flex-1 items-center justify-center gap-2 rounded-full px-6 py-3 bg-primary text-primary-foreground hover:opacity-90 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                  spinnerClassName="text-primary-foreground"
                 >
                   <Search className="h-4 w-4" />
                   Search
-                </button>
+                </LoadingButton>
                 <button
                   onClick={() => {
                     setName('');
