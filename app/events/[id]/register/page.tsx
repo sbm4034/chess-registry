@@ -33,6 +33,7 @@ export default function EventRegisterPage() {
   const [zoomImage, setZoomImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [profileMissing, setProfileMissing] = useState(false);
 
 
   useEffect(() => {
@@ -63,6 +64,18 @@ export default function EventRegisterPage() {
       }
 
       const user = sessionData.session.user;
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!profile) {
+        setProfileMissing(true);
+        setLoading(false);
+        return;
+      }
 
       const { data: eventData } = await supabase
         .from('events')
@@ -110,11 +123,18 @@ export default function EventRegisterPage() {
 
     if (!user) return;
 
-    const { error } = await supabase.from('registrations').insert({
+const { error } = await supabase
+  .from('registrations')
+  .upsert(
+    {
       user_id: user.id,
       event_id: eventId,
       category: 'Open',
-    });
+      payment_status: 'pending',
+      verification_status: 'pending',
+    },
+    { onConflict: 'event_id,user_id' }
+  );
 
     if (!error) {
       window.location.reload();
@@ -196,6 +216,25 @@ const uploadPaymentScreenshot = async (file: File) => {
     );
   }
 
+  if (profileMissing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <Card className="p-6 text-center max-w-md">
+          <p className="text-sm text-gray-700">
+            Please complete your profile registration before registering for events.
+          </p>
+
+          <Link
+            href="/register"
+            className="mt-4 inline-block rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground"
+          >
+            Complete Registration
+          </Link>
+        </Card>
+      </div>
+    );
+  }
+
   if (!event) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -210,7 +249,32 @@ const uploadPaymentScreenshot = async (file: File) => {
     <>
       <div className="min-h-screen px-4 py-8 font-sans bg-surface-base">
         <Section className="py-6">
-          <div className="mx-auto max-w-3xl space-y-6 rounded-3xl border border-surface-warm bg-white/80 p-4 shadow-sm backdrop-blur md:p-8">
+          <div className="mx-auto max-w-3xl space-y-8 rounded-3xl border border-surface-warm bg-white/80 p-4 shadow-sm backdrop-blur md:p-8">
+
+            {/* Hero Banner */}
+            <div className="relative overflow-hidden rounded-2xl shadow-md">
+              <Image
+                src="/chess_event_registration_banner.jpg"
+                alt="Event registration banner"
+                width={1400}
+                height={420}
+                className="h-48 w-full object-cover md:h-56"
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
+              <div className="absolute inset-0 flex flex-col justify-end p-5 md:p-6">
+                <p className="text-[10px] md:text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
+                  OFFICIAL PANIPAT CHESS EVENT
+                </p>
+                <h1 className="mt-2 font-serif text-2xl md:text-3xl text-white">
+                  Event Registration
+                </h1>
+                <p className="mt-2 text-xs md:text-sm italic text-white/70">
+                  <span className="inline-block align-middle text-[0.9em]">♟</span>{' '}
+                  <span className="align-middle">Show Your Strategy. Prove Your Move. Become the District Champion!</span>
+                </p>
+              </div>
+            </div>
 
             {/* Header */}
             <Card className="p-5 md:p-6">
@@ -227,7 +291,7 @@ const uploadPaymentScreenshot = async (file: File) => {
             </Card>
 
             {/* Event Info */}
-            <Card className="p-5 md:p-6">
+            <Card className="p-5 md:p-6 shadow-md">
               <div className="flex flex-col gap-4 md:flex-row md:items-center">
                 <div
                   onClick={() => event.image_url && setZoomImage(event.image_url)}
@@ -249,7 +313,7 @@ const uploadPaymentScreenshot = async (file: File) => {
                 </div>
 
                 <div className="flex-1 space-y-2">
-                  <h2 className="text-lg font-semibold text-text-default">
+                  <h2 className="text-xl font-bold text-text-default">
                     {event.name}
                   </h2>
 
@@ -295,7 +359,7 @@ const uploadPaymentScreenshot = async (file: File) => {
                   onClick={registerForEvent}
                   loading={submitting}
                   loadingText="Registering..."
-                  className="mt-4 w-full py-3 text-sm font-semibold shadow-lg"
+                  className="mt-4 w-full rounded-full bg-primary text-primary-foreground py-3 text-sm font-semibold shadow-md hover:bg-accent hover:text-accent-foreground hover:scale-[1.01] transition-all duration-300"
                 >
                   Confirm Registration
                 </LoadingButton>
