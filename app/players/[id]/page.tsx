@@ -7,10 +7,12 @@ export default async function PlayerProfilePage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-
   const supabase = await createClient()
 
-  // PLAYER
+  /* ───────────────────────────────────────────── */
+  /* PLAYER */
+  /* ───────────────────────────────────────────── */
+
   const { data: player } = await supabase
     .from('user_profiles')
     .select(`
@@ -37,7 +39,10 @@ export default async function PlayerProfilePage({
     )
   }
 
-  // CERTIFICATES (PUBLIC ONLY)
+  /* ───────────────────────────────────────────── */
+  /* PUBLIC CERTIFICATES */
+  /* ───────────────────────────────────────────── */
+
   const { data: certificates } = await supabase
     .from('documents')
     .select('id, file_url')
@@ -45,26 +50,34 @@ export default async function PlayerProfilePage({
     .eq('type', 'certificate')
     .eq('visibility', 'public')
 
-  // EVENTS PARTICIPATION
-  const { data } = await supabase
-  .from('player_events')
-  .select(`
-    status,
-    events!player_events_event_id_fkey (
+  /* ───────────────────────────────────────────── */
+  /* APPROVED EVENT PARTICIPATION ONLY */
+  /* ───────────────────────────────────────────── */
+
+  const { data: registrations } = await supabase
+    .from('registrations')
+    .select(`
       id,
-      name,
-      location,
-      start_date,
-      end_date
-    )
-  `)
-  .eq('user_id', id)
+      verification_status,
+      events (
+        id,
+        name,
+        location,
+        start_date,
+        end_date
+      )
+    `)
+    .eq('user_id', id)
+    .eq('verification_status', 'approved')
+
+  // Filter safely + optional upcoming filter
+  const today = new Date().toISOString().split('T')[0]
 
 const events =
-  data?.map((e) => ({
-    status: e.status,
-    event: Array.isArray(e.events) ? e.events[0] : e.events,
-  })).filter((e) => e.event !== null) ?? []
+  registrations
+    ?.map((r) => r.events?.[0])
+    .filter(Boolean)
+    .filter((event) => event!.end_date && event!.end_date >= today) ?? []
 
   return (
     <div className="bg-background min-h-screen py-16">
@@ -72,7 +85,7 @@ const events =
         <PlayerProfileClient
           player={player}
           certificates={certificates || []}
-          events={events || []}
+          events={events}
         />
       </div>
     </div>

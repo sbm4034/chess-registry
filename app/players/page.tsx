@@ -78,8 +78,8 @@ export default function PlayersPage() {
             Player Search
           </h2>
           <div className="mt-8 bg-surface border border-border rounded-xl shadow-sm p-4">
-            <div className="grid gap-2 sm:grid-cols-5">
-              <div className="relative sm:col-span-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative flex-1 min-w-[220px]">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   placeholder="Search by name"
@@ -89,7 +89,7 @@ export default function PlayersPage() {
                 />
               </div>
 
-              <div className="relative">
+              <div className="relative flex-1 min-w-[190px]">
                 <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   placeholder="City"
@@ -102,7 +102,7 @@ export default function PlayersPage() {
               <select
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="flex-1 min-w-[190px] w-full rounded-xl border border-border bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
                 <option value="">All States</option>
                 <option value="Andhra Pradesh">Andhra Pradesh</option>
@@ -145,12 +145,12 @@ export default function PlayersPage() {
                 <option value="Puducherry">Puducherry</option>
               </select>
 
-              <div className="flex gap-2">
+              <div className="flex w-full sm:w-auto gap-2 shrink-0">
                 <LoadingButton
                   onClick={searchPlayers}
                   loading={loading}
                   loadingText="Searching..."
-                  className="flex flex-1 items-center justify-center gap-2 rounded-full px-6 py-3 bg-primary text-primary-foreground hover:opacity-90 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="flex-1 sm:flex-none items-center justify-center gap-2 rounded-full px-6 py-3 bg-primary text-primary-foreground hover:opacity-90 transition disabled:opacity-60 disabled:cursor-not-allowed"
                   spinnerClassName="text-primary-foreground"
                 >
                   <Search className="h-4 w-4" />
@@ -163,7 +163,7 @@ export default function PlayersPage() {
                     setState('');
                     setTimeout(() => searchPlayers(), 0);
                   }}
-                  className="flex items-center justify-center rounded-full px-6 py-3 border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition"
+                  className="shrink-0 flex items-center justify-center rounded-full px-6 py-3 border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition"
                   title="Reset filters"
                 >
                   Reset

@@ -24,23 +24,37 @@ export default function RootLayout({
     
     {/* Column 1 */}
     <div className="space-y-3">
-      <h3 className="font-serif text-xl text-accent">Chess Registry</h3>
+      <h3 className="font-serif text-xl text-accent">
+        Panipat Chess Organization
+      </h3>
       <p className="text-sm text-primary-foreground/80">
-        Official Panipat chess platform.
+        Official platform for player registration and chess events in Panipat.
       </p>
     </div>
 
     {/* Column 2 */}
     <div className="space-y-2 text-sm">
       <p className="font-medium text-primary-foreground">Quick Links</p>
-      <Link href="/events" className="block text-primary-foreground/80 transition hover:text-accent">
+
+      <Link
+        href="/"
+        className="block text-primary-foreground/80 transition hover:text-accent"
+      >
+        Home
+      </Link>
+
+      <Link
+        href="/events"
+        className="block text-primary-foreground/80 transition hover:text-accent"
+      >
         Events
       </Link>
-      <Link href="/players" className="block text-primary-foreground/80 transition hover:text-accent">
+
+      <Link
+        href="/players"
+        className="block text-primary-foreground/80 transition hover:text-accent"
+      >
         Players
-      </Link>
-      <Link href="/login" className="block text-primary-foreground/80 transition hover:text-accent">
-        Login
       </Link>
     </div>
 
@@ -75,10 +89,10 @@ export default function RootLayout({
       <div className="flex items-center gap-2 text-sm text-primary-foreground/80">
         <Mail className="h-4 w-4 text-accent" />
         <a
-          href="mailto:indianchessscl@gmail.com"
+          href="mailto:panipatchessassociation@gmail.com"
           className="transition hover:text-accent"
         >
-          indianchessscl@gmail.com
+          panipatchessassociation@gmail.com
         </a>
       </div>
 
@@ -94,8 +108,25 @@ export default function RootLayout({
           WhatsApp: +91 79883 90744
         </a>
       </div>
-
     </div>
+  </div>
+
+  {/* Bottom Section */}
+  <div className="mt-12 border-t border-border pt-6 text-center text-xs text-primary-foreground/60 px-4">
+    <p>
+      © {new Date().getFullYear()} Panipat Chess Organization. All rights reserved.
+    </p>
+    <p className="mt-2">
+      Designed & Developed by{" "}
+      <a
+        href="https://shubhamrana.lovable.app/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-medium text-accent hover:underline"
+      >
+        Shubham Rana
+      </a>
+    </p>
   </div>
 </footer>
       </body>

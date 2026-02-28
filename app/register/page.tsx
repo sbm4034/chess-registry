@@ -102,13 +102,7 @@ export default function RegisterPage() {
     return;
   }
 
-  const dobUrl = await uploadDocument(user.id, dobFile, 'dob');
-
-  await supabase.from('documents').insert({
-    user_id: user.id,
-    type: 'dob',
-    file_url: dobUrl,
-  });
+  await uploadDocument(user.id, dobFile, 'dob');
 }
 
     if (certFiles) {
@@ -125,13 +119,7 @@ export default function RegisterPage() {
   }
 
   for (const file of filesArray) {
-    const certUrl = await uploadDocument(user.id, file, 'certificate');
-
-    await supabase.from('documents').insert({
-      user_id: user.id,
-      type: 'certificate',
-      file_url: certUrl,
-    });
+    await uploadDocument(user.id, file, 'certificate');
   }
 }
 

@@ -222,6 +222,15 @@ const completion = profileCompletion();
   }, [previewUrl]);
   
   // ─────────────────────────────────────────────
+  const getRegistrationStatus = (r: any) => {
+    if (r?.verification_status === 'approved') return 'Confirmed';
+    if (r?.verification_status === 'rejected') return 'Rejected';
+    if (r?.payment_status === 'paid' && r?.verification_status === 'pending') {
+      return 'Payment Received – Awaiting Approval';
+    }
+    if (r?.payment_status === 'pending') return 'Awaiting Payment';
+    return 'Pending';
+  };
 
   return (
     <div className={`${sans.className} min-h-screen px-4 py-8`}>
@@ -509,7 +518,7 @@ const completion = profileCompletion();
                     {r.event?.start_date} → {r.event?.end_date}
                   </p>
                   <span className="mt-3 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-700">
-                    {r.status}
+                    {getRegistrationStatus(r)}
                   </span>
                 </div>
               ))}

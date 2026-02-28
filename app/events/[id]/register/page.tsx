@@ -8,7 +8,6 @@ import {
   CheckCircle,
   CreditCard,
   IndianRupee,
-  Info,
   MapPin,
   ShieldCheck,
 } from 'lucide-react';
@@ -18,6 +17,7 @@ import { ChatBubbleOvalLeftEllipsisIcon } from '@heroicons/react/24/outline';
 import { Card } from '@/app/components/ui/Card';
 import { Section } from '@/app/components/ui/Section';
 import LoadingButton from '@/app/components/ui/LoadingButton';
+import { X } from 'lucide-react';
 
 export default function EventRegisterPage() {
   const supabase = createClient();
@@ -28,7 +28,30 @@ export default function EventRegisterPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [event, setEvent] = useState<any>(null);
-  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
+  const [registration, setRegistration] = useState<any>(null);
+  const [registrationClosed, setRegistrationClosed] = useState(false);
+  const [zoomImage, setZoomImage] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+
+
+  useEffect(() => {
+  const fetchSignedUrl = async () => {
+    setSignedUrl(null); // reset first
+
+    if (!registration?.payment_screenshot) return;
+
+    const { data, error } = await supabase.storage
+      .from('payment-screenshots')
+      .createSignedUrl(registration.payment_screenshot, 60);
+
+    if (!error && data?.signedUrl) {
+      setSignedUrl(data.signedUrl);
+    }
+  };
+
+  fetchSignedUrl();
+}, [registration]);
 
   useEffect(() => {
     const init = async () => {
@@ -54,22 +77,31 @@ export default function EventRegisterPage() {
 
       setEvent(eventData);
 
-      const { data: mapping } = await supabase
-        .from('player_events')
-        .select('user_id')
+      // Auto close
+      if (eventData.registration_deadline) {
+        const today = new Date();
+        const deadline = new Date(eventData.registration_deadline);
+        if (today > deadline) {
+          setRegistrationClosed(true);
+        }
+      }
+
+      const { data: reg } = await supabase
+        .from('registrations')
+        .select('*')
         .eq('event_id', eventId)
         .eq('user_id', user.id)
         .maybeSingle();
 
-      setAlreadyRegistered(!!mapping);
+      setRegistration(reg);
       setLoading(false);
     };
 
     init();
-  }, [eventId, router]);
+  }, [eventId]);
 
   const registerForEvent = async () => {
-    if (alreadyRegistered || submitting) return;
+    if (registration || submitting || registrationClosed) return;
 
     setSubmitting(true);
 
@@ -78,22 +110,82 @@ export default function EventRegisterPage() {
 
     if (!user) return;
 
-    const { error } = await supabase
-      .from('player_events')
-      .upsert(
-        {
-          user_id: user.id,
-          event_id: eventId,
-          status: 'pending',
-        },
-        { onConflict: 'user_id,event_id' },
-      );
+    const { error } = await supabase.from('registrations').insert({
+      user_id: user.id,
+      event_id: eventId,
+      category: 'Open',
+    });
 
     if (!error) {
-      setAlreadyRegistered(true);
+      window.location.reload();
     }
 
     setSubmitting(false);
+  };
+
+const uploadPaymentScreenshot = async (file: File) => {
+  if (!registration || uploading) return;
+
+  setUploading(true);
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const user = sessionData.session?.user;
+  if (!user) {
+    setUploading(false);
+    return;
+  }
+
+  const filePath = `${user.id}/${eventId}/${Date.now()}-${file.name}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('payment-screenshots')
+    .upload(filePath, file);
+
+  if (uploadError) {
+    alert(uploadError.message);
+    setUploading(false);
+    return;
+  }
+
+  const { error: updateError } = await supabase
+    .from('registrations')
+    .update({
+      payment_status: 'paid',
+      payment_screenshot: filePath,
+    })
+    .eq('id', registration.id);
+
+  if (updateError) {
+    alert(updateError.message);
+    setUploading(false);
+    return;
+  }
+
+  setUploading(false);
+  window.location.reload();
+};
+
+  const getStatusMessage = () => {
+    if (!registration) return null;
+
+    if (registration.verification_status === 'approved') {
+      return {
+        text: 'Your participation is officially confirmed.',
+        color: 'text-green-600',
+      };
+    }
+
+    if (registration.payment_status === 'paid') {
+      return {
+        text: 'Payment received. Awaiting organizer approval.',
+        color: 'text-blue-600',
+      };
+    }
+
+    return {
+      text: 'Registration submitted. Please complete payment to confirm participation.',
+      color: 'text-gray-600',
+    };
   };
 
   if (loading) {
@@ -112,185 +204,258 @@ export default function EventRegisterPage() {
     );
   }
 
+  const status = getStatusMessage();
+
   return (
-    <div className="min-h-screen px-4 py-8 font-sans bg-surface-base">
-      <Section className="py-6">
-        <div className="mx-auto max-w-3xl space-y-6 rounded-3xl border border-surface-warm bg-white/80 p-4 shadow-sm backdrop-blur md:p-8">
-          <Card className="p-5 md:p-6">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-600">
-              <ShieldCheck className="h-4 w-4 text-gray-400" />
-              Official Chess Registry Event
-            </div>
-            <h1 className="font-serif mt-3 text-2xl text-text-default md:text-3xl">
-              Event Registration
-            </h1>
-            <p className="text-sm text-gray-600 mt-1">
-              Complete your registration for the event
-            </p>
-          </Card>
+    <>
+      <div className="min-h-screen px-4 py-8 font-sans bg-surface-base">
+        <Section className="py-6">
+          <div className="mx-auto max-w-3xl space-y-6 rounded-3xl border border-surface-warm bg-white/80 p-4 shadow-sm backdrop-blur md:p-8">
 
-          <Card className="p-5 md:p-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center">
-              <div className="relative h-24 w-full overflow-hidden rounded-2xl border border-surface-warm bg-white md:h-24 md:w-36">
-                {event.image_url ? (
-                  <Image
-                    src={event.image_url}
-                    alt={event.name}
-                    width={360}
-                    height={240}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div
-                    className="flex h-full w-full items-center justify-center bg-surface-warm text-xs text-gray-500"
-                    style={{
-                      backgroundImage: "url('/logo.png')",
-                      backgroundRepeat: 'no-repeat',
-                      backgroundPosition: 'center',
-                      backgroundSize: '60% auto',
-                      opacity: 0.8,
-                    }}
-                  >
-                    <span className="sr-only">Event</span>
-                  </div>
-                )}
+            {/* Header */}
+            <Card className="p-5 md:p-6">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-600">
+                <ShieldCheck className="h-4 w-4 text-gray-400" />
+                Official Panipat Chess Event
               </div>
-              <div className="flex-1 space-y-2">
-                <h2 className="text-lg font-semibold text-text-default">
-                  {event.name}
-                </h2>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <MapPin size={16} className="text-gray-400" />
-                  <span>{event.location}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Calendar size={16} className="text-gray-400" />
-                  <span>
-                    {event.start_date} → {event.end_date}
-                  </span>
-                </div>
-                {event.fee_amount && (
-                  <div className="inline-flex items-center gap-2 rounded-full bg-brand-gold/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand-dark">
-                    <IndianRupee size={14} className="text-brand-dark" />
-                    <span>Fee: {event.fee_amount}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </Card>
+              <h1 className="font-serif mt-3 text-2xl text-text-default md:text-3xl">
+                Event Registration
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                Complete your registration for this event
+              </p>
+            </Card>
 
-          {!alreadyRegistered && (
-            <>
-              <Card className="p-5 md:p-6">
-                <h3 className="text-sm font-semibold text-gray-700">Registration</h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  Confirm your participation in this official event.
+            {/* Event Info */}
+            <Card className="p-5 md:p-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                <div
+                  onClick={() => event.image_url && setZoomImage(event.image_url)}
+                  className="relative h-24 w-full overflow-hidden rounded-2xl border border-surface-warm bg-white md:h-24 md:w-36 cursor-pointer"
+                >
+                  {event.image_url ? (
+                    <Image
+                      src={event.image_url}
+                      alt={event.name}
+                      width={360}
+                      height={240}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-surface-warm text-xs text-gray-500">
+                      Event
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 space-y-2">
+                  <h2 className="text-lg font-semibold text-text-default">
+                    {event.name}
+                  </h2>
+
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <MapPin size={16} className="text-gray-400" />
+                    <span>{event.location}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Calendar size={16} className="text-gray-400" />
+                    <span>
+                      {event.start_date} → {event.end_date}
+                    </span>
+                  </div>
+
+                  {event.fee_amount && (
+                    <div className="inline-flex items-center gap-2 rounded-full bg-brand-gold/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand-dark">
+                      <IndianRupee size={14} />
+                      <span>Fee: ₹{event.fee_amount}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+
+            {/* Registration Closed */}
+            {registrationClosed && (
+              <Card className="p-5">
+                <p className="text-red-600 font-medium text-sm">
+                  Registration Closed
                 </p>
+              </Card>
+            )}
+
+            {/* Not Registered */}
+            {!registration && !registrationClosed && (
+              <Card className="p-5 md:p-6">
+                <h3 className="text-sm font-semibold text-gray-700">
+                  Confirm Participation
+                </h3>
+
                 <LoadingButton
                   onClick={registerForEvent}
                   loading={submitting}
                   loadingText="Registering..."
-                  className="mt-4 w-full py-3 text-sm font-semibold shadow-lg shadow-brand-primary/10 disabled:opacity-60"
-                  spinnerClassName="text-primary-foreground"
+                  className="mt-4 w-full py-3 text-sm font-semibold shadow-lg"
                 >
                   Confirm Registration
                 </LoadingButton>
-                <p className="mt-3 text-xs text-gray-500">
-                  By registering, you agree to event rules.
-                </p>
               </Card>
+            )}
 
-              <div className="flex items-start gap-2 text-xs text-gray-500">
-                <Info size={14} className="mt-0.5" />
-                <p>Payment will be done after registration.</p>
-              </div>
-            </>
-          )}
-
-          {alreadyRegistered && (
-            <>
-              <Card className="p-5 space-y-2">
-                <div className="flex items-center gap-2 text-gray-700 font-medium">
-                  <CheckCircle size={18} />
-                  Registration already submitted
-                </div>
-
-                <p className="text-sm text-gray-600">
-                  Your registration is pending confirmation. Please complete payment or contact support if needed.
-                </p>
-              </Card>
-
-              <Card className="p-5 space-y-4">
-                <div className="flex items-center gap-2 font-medium text-text-default">
-                  <CreditCard size={18} />
-                  <span>Payment (Manual Verification)</span>
-                </div>
-
-                {event.fee_amount && (
-                  <div className="flex items-center gap-2 text-sm font-semibold text-text-default">
-                    <IndianRupee size={16} />
-                    <span>Amount to Pay: {event.fee_amount}</span>
+            {/* Registered */}
+            {registration && (
+              <>
+                <Card className="p-5 space-y-2">
+                  <div className="flex items-center gap-2 text-gray-700 font-medium">
+                    <CheckCircle size={18} />
+                    Registration Submitted
                   </div>
-                )}
+                  <p className={`text-sm ${status?.color}`}>
+                    {status?.text}
+                  </p>
+                </Card>
 
-                <p className="text-sm text-gray-700">
-                  Please pay using the QR code below. Mention your <strong>name</strong> and{' '}
-                  <strong>event name</strong>.
-                </p>
-
-                <div className="flex flex-col items-center gap-4 rounded-2xl border border-surface-warm bg-white p-5 shadow-sm">
-  
-  <div className="relative w-44 h-44">
-    <Image
-      src="https://wrkbecdjmehklugtcpyt.supabase.co/storage/v1/object/public/documents-public/QR_code.jpeg"
-      alt="Gpay QR Code"
-      fill
-      className="rounded-xl border border-surface-warm object-contain"
-      sizes="176px"
-      priority
-    />
-  </div>
-
-  <p className="text-xs text-gray-600 text-center">
-    Scan to pay registration fee via any UPI app
-  </p>
-
-  <div className="flex items-center gap-2 text-xs text-gray-600">
-    UPI ID:
-    <span className="font-semibold text-text-default">
-      kavitav1721@okaxis
-    </span>
-
-    <button
-      onClick={() => navigator.clipboard.writeText('kavitav1721@okaxis')}
-      className="rounded-full border border-surface-warm bg-white px-2 py-0.5 text-[10px] font-semibold text-gray-700 hover:bg-surface-base transition"
-    >
-      Copy
-    </button>
-  </div>
-
-</div>
-
-                {event.support_whatsapp && (
-                  <Link
-                    href={`https://wa.me/${event.support_whatsapp.replace(/\D/g, '')}`}
-                    target="_blank"
-                    className="inline-flex items-center gap-2 text-sm text-gray-700 font-medium hover:underline"
-                  >
-                    <ChatBubbleOvalLeftEllipsisIcon className="h-5 w-5 shrink-0" />
-                    <span>Contact support on WhatsApp</span>
-                  </Link>
-                )}
-              </Card>
-
-              <div className="flex items-start gap-2 text-xs text-gray-500">
-                <Info size={14} className="mt-0.5" />
-                <p>Registration will be confirmed manually after payment verification by organizers.</p>
-              </div>
-            </>
-          )}
-        </div>
-      </Section>
+                {registration.payment_status !== 'paid' && (
+  <Card className="p-5 space-y-4">
+    <div className="flex items-center gap-2 font-medium text-text-default">
+      <CreditCard size={18} />
+      Upload Payment Screenshot for Confirmation & Event Approval
     </div>
+
+    {event.fee_amount && (
+      <div className="text-sm font-semibold">
+        Amount to Pay: ₹{event.fee_amount}
+      </div>
+    )}
+
+    <p className="text-sm text-gray-700">
+      Scan QR below and mention your name & event.
+    </p>
+
+    <div className="flex flex-col items-center gap-4 rounded-2xl border border-surface-warm bg-white p-5 shadow-sm">
+      <div
+        onClick={() =>
+          setZoomImage(
+            'https://wrkbecdjmehklugtcpyt.supabase.co/storage/v1/object/public/documents-public/QR_code.jpeg'
+          )
+        }
+        className="relative w-44 h-44 cursor-pointer"
+      >
+        <Image
+          src="https://wrkbecdjmehklugtcpyt.supabase.co/storage/v1/object/public/documents-public/QR_code.jpeg"
+          alt="QR Code"
+          fill
+          className="rounded-xl object-contain"
+        />
+      </div>
+
+      <div className="text-xs text-gray-600 text-center">
+        UPI ID: <strong>kavitav1721@okaxis</strong>
+      </div>
+    </div>
+
+    {/* ACTION ROW FIXED ALIGNMENT */}
+    <div className="flex flex-wrap items-center gap-6 pt-2">
+<label
+  className={`inline-flex items-center gap-2 text-sm font-medium cursor-pointer hover:underline ${
+    uploading ? 'opacity-60 cursor-not-allowed' : ''
+  }`}
+>
+  {uploading ? 'Uploading Screenshot…' : 'Upload Payment Screenshot'}
+        <input
+  type="file"
+  accept="image/*"
+  hidden
+  disabled={uploading}
+  onChange={(e) =>
+    e.target.files &&
+    uploadPaymentScreenshot(e.target.files[0])
+  }
+/>
+      </label>
+
+      {event.support_whatsapp && (
+        <Link
+          href={`https://wa.me/${event.support_whatsapp.replace(/\D/g, '')}`}
+          target="_blank"
+          className="inline-flex items-center gap-2 text-sm font-medium hover:underline"
+        >
+          <ChatBubbleOvalLeftEllipsisIcon className="h-5 w-5" />
+          Contact Support
+        </Link>
+      )}
+    </div>
+  </Card>
+)}
+{registration &&
+  registration.payment_status === 'paid' &&
+  registration.payment_screenshot && (
+    <Card className="p-5 space-y-4">
+      <div className="flex items-center gap-2 font-medium">
+        <CreditCard size={18} />
+        Uploaded Payment Screenshot
+      </div>
+
+      <div className="flex flex-col items-center gap-4 rounded-2xl border bg-white p-5 shadow-sm">
+        {signedUrl ? (
+          <div
+            onClick={() => setZoomImage(signedUrl)}
+            className="relative w-44 h-44 cursor-pointer"
+          >
+            <Image
+              src={signedUrl}
+              alt="Payment Screenshot"
+              fill
+              className="rounded-xl object-contain"
+              unoptimized
+            />
+          </div>
+        ) : (
+          <div className="text-xs text-gray-500">
+            Loading screenshot...
+          </div>
+        )}
+
+        <div className="text-xs text-gray-600 text-center">
+          Click image to zoom
+        </div>
+      </div>
+    </Card>
+)}
+              </>
+            )}
+          </div>
+        </Section>
+      </div>
+
+      {/* ZOOM MODAL */}
+      {zoomImage && (
+        <div
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+          onClick={() => setZoomImage(null)}
+        >
+          <div
+            className="relative max-h-[90vh] max-w-[90vw]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setZoomImage(null)}
+              className="absolute -top-3 -right-3 bg-white rounded-full p-2"
+            >
+              <X size={16} />
+            </button>
+
+            <Image
+              src={zoomImage}
+              alt="Zoomed"
+              width={1200}
+              height={900}
+              className="rounded-2xl object-contain max-h-[90vh]"
+              unoptimized
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
