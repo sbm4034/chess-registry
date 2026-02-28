@@ -421,7 +421,7 @@ const uploadPaymentScreenshot = async (file: File) => {
     {/* ACTION ROW FIXED ALIGNMENT */}
     <div className="flex flex-wrap items-center gap-6 pt-2">
 <label
-  className={`inline-flex items-center gap-2 text-sm font-medium cursor-pointer hover:underline ${
+  className={`inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-md hover:bg-accent hover:text-accent-foreground transition-all duration-300 cursor-pointer ${
     uploading ? 'opacity-60 cursor-not-allowed' : ''
   }`}
 >
