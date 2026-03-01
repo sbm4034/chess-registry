@@ -264,7 +264,7 @@ const uploadPaymentScreenshot = async (file: File) => {
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
               <div className="absolute inset-0 flex flex-col justify-end p-5 md:p-6">
                 <p className="text-[10px] md:text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
-                  OFFICIAL PANIPAT CHESS EVENT
+                  OFFICIAL District CHESS EVENT
                 </p>
                 <h1 className="mt-2 font-serif text-2xl md:text-3xl text-white">
                   Event Registration
@@ -280,7 +280,7 @@ const uploadPaymentScreenshot = async (file: File) => {
             <Card className="p-5 md:p-6">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-600">
                 <ShieldCheck className="h-4 w-4 text-gray-400" />
-                Official Panipat Chess Event
+                Official District Chess Event
               </div>
               <h1 className="font-serif mt-3 text-2xl text-text-default md:text-3xl">
                 Event Registration
@@ -414,7 +414,7 @@ const uploadPaymentScreenshot = async (file: File) => {
       </div>
 
       <div className="text-xs text-gray-600 text-center">
-        UPI ID: <strong>kavitav1721@okaxis</strong>
+        UPI ID: <strong>Districtv1721@okaxis</strong>
       </div>
     </div>
 

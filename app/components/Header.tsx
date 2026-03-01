@@ -58,7 +58,7 @@ const handleLogout = async () => {
           <span className="relative h-8 w-8">
             <Image
               src="/logo.png"
-              alt="Panipat Chess Association logo"
+              alt="District Chess Association logo"
               fill
               sizes="32px"
               className="object-contain"

@@ -25,10 +25,10 @@ export default function RootLayout({
     {/* Column 1 */}
     <div className="space-y-3">
       <h3 className="font-serif text-xl text-accent">
-        Panipat Chess Organization
+        District Chess Organization
       </h3>
       <p className="text-sm text-primary-foreground/80">
-        Official platform for player registration and chess events in Panipat.
+        Official platform for player registration and chess events in District.
       </p>
     </div>
 
@@ -89,10 +89,10 @@ export default function RootLayout({
       <div className="flex items-center gap-2 text-sm text-primary-foreground/80">
         <Mail className="h-4 w-4 text-accent" />
         <a
-          href="mailto:panipatchessassociation@gmail.com"
+          href="mailto:Districtchessassociation@gmail.com"
           className="transition hover:text-accent"
         >
-          panipatchessassociation@gmail.com
+          Districtchessassociation@gmail.com
         </a>
       </div>
 
@@ -105,7 +105,7 @@ export default function RootLayout({
           rel="noopener noreferrer"
           className="transition hover:text-accent"
         >
-          WhatsApp: +91 79883 90744
+          WhatsApp: +91 12345 67890
         </a>
       </div>
     </div>
@@ -114,7 +114,7 @@ export default function RootLayout({
   {/* Bottom Section */}
   <div className="mt-12 border-t border-border pt-6 text-center text-xs text-primary-foreground/60 px-4">
     <p>
-      © {new Date().getFullYear()} Panipat Chess Organization. All rights reserved.
+      © {new Date().getFullYear()} District Chess Organization. All rights reserved.
     </p>
     <p className="mt-2">
       Designed & Developed by{" "}

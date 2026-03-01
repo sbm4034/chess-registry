@@ -206,7 +206,7 @@ export default function HomePage() {
               OFFICIAL CHESS REGISTRY
             </p>
             <h1 className="text-5xl md:text-6xl font-serif font-semibold tracking-tight text-primary-foreground">
-              Empowering Chess Across Panipat
+              Empowering Chess Across District
             </h1>
             <div className="w-24 h-[3px] bg-accent mx-auto mt-6" />
             <p className="text-lg font-sans text-white/80 max-w-2xl mx-auto">
@@ -546,11 +546,11 @@ export default function HomePage() {
   <div className="flex items-center gap-2 text-sm text-muted-foreground">
     UPI:
     <span className="font-semibold text-primary">
-      kavitav1721@okaxis
+      Districtv1721@okaxis
     </span>
 
     <button
-      onClick={() => navigator.clipboard.writeText('kavitav1721@okaxis')}
+      onClick={() => navigator.clipboard.writeText('Districtv1721@okaxis')}
       className="rounded-full border border-border bg-surface px-2 py-0.5 text-xs font-semibold text-primary hover:bg-accent hover:text-accent-foreground transition"
     >
       Copy
